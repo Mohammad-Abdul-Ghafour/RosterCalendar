@@ -20,6 +20,10 @@
                 <caption>Show Weekends</caption>
                 <description>Display Saturday and Sunday in the calendar</description>
             </property>
+            <property key="pageSize" type="integer" defaultValue="10">
+                <caption>Users Per Page</caption>
+                <description>Number of users to display per page</description>
+            </property>
         </propertyGroup>
 
         <propertyGroup caption="Data Sources">

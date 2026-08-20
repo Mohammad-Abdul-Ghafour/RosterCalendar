@@ -5,6 +5,7 @@ import "./ui/RosterCalendar.css";
 export function RosterCalendar({
     defaultView,
     showWeekends,
+    pageSize,
     usersDataSource,
     userNameAttr,
     rosterPatternsDataSource,
@@ -25,34 +26,57 @@ export function RosterCalendar({
 }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState(defaultView);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const dateRange = useMemo(() => {
         return generateDateRange(currentDate, viewMode, showWeekends);
     }, [currentDate, viewMode, showWeekends]);
 
+    const itemsPerPage = pageSize || 10;
+
+    // Set offset and limit for pagination - request one extra to detect if there are more pages
+    useMemo(() => {
+        if (usersDataSource && usersDataSource.setLimit && usersDataSource.setOffset) {
+            usersDataSource.setLimit(itemsPerPage + 1); // Request one extra
+            usersDataSource.setOffset((currentPage - 1) * itemsPerPage);
+        }
+    }, [usersDataSource, currentPage, itemsPerPage]);
+
+    // Check if there are more pages by seeing if we got extra item
+    const hasNextPage = usersDataSource?.items?.length > itemsPerPage;
+    const hasPrevPage = currentPage > 1;
+
     const users = useMemo(() => {
         if (!usersDataSource || usersDataSource.status !== "available") return [];
-        return usersDataSource.items.map(item => ({
+        // Take only the requested page size (we fetched +1 to check for next page)
+        return usersDataSource.items.slice(0, itemsPerPage).map(item => ({
             id: item.id,
             name: userNameAttr?.get(item).value || "Unnamed User"
         }));
-    }, [usersDataSource, userNameAttr]);
+    }, [usersDataSource, userNameAttr, itemsPerPage]);
+
+    // Get user IDs on current page for filtering
+    const currentPageUserIds = useMemo(() => {
+        return users.map(u => u.id);
+    }, [users]);
 
     const rosterPatterns = useMemo(() => {
         if (!rosterPatternsDataSource || rosterPatternsDataSource.status !== "available") return [];
-        return rosterPatternsDataSource.items.map(item => {
-            // Get user object from association and extract ID
-            const userObj = patternUserRef?.get(item).value;
-            const userId = userObj?.id || null;
+        return rosterPatternsDataSource.items
+            .map(item => {
+                // Get user object from association and extract ID
+                const userObj = patternUserRef?.get(item).value;
+                const userId = userObj?.id || null;
 
-            return {
-                id: item.id,
-                userId,
-                startDate: patternStartDateAttr?.get(item).value,
-                endDate: patternEndDateAttr?.get(item).value
-            };
-        });
-    }, [rosterPatternsDataSource, patternUserRef, patternStartDateAttr, patternEndDateAttr]);
+                return {
+                    id: item.id,
+                    userId,
+                    startDate: patternStartDateAttr?.get(item).value,
+                    endDate: patternEndDateAttr?.get(item).value
+                };
+            })
+            .filter(pattern => currentPageUserIds.includes(pattern.userId));
+    }, [rosterPatternsDataSource, patternUserRef, patternStartDateAttr, patternEndDateAttr, currentPageUserIds]);
 
     const patternDays = useMemo(() => {
         if (!patternDaysDataSource || patternDaysDataSource.status !== "available") return [];
@@ -80,28 +104,30 @@ export function RosterCalendar({
 
     const rosterDays = useMemo(() => {
         if (!rosterDaysDataSource || rosterDaysDataSource.status !== "available") return [];
-        return rosterDaysDataSource.items.map(item => {
-            // Get user object from association and extract ID
-            const userObj = rosterDayUserRef?.get(item).value;
-            const userId = userObj?.id || null;
+        return rosterDaysDataSource.items
+            .map(item => {
+                // Get user object from association and extract ID
+                const userObj = rosterDayUserRef?.get(item).value;
+                const userId = userObj?.id || null;
 
-            // Convert hours to number (handle BigNumber or other objects)
-            const hoursValue = rosterDayHoursAttr?.get(item).value;
-            const hours = hoursValue != null ? Number(hoursValue) : null;
+                // Convert hours to number (handle BigNumber or other objects)
+                const hoursValue = rosterDayHoursAttr?.get(item).value;
+                const hours = hoursValue != null ? Number(hoursValue) : null;
 
-            // Convert type to string
-            const typeValue = rosterDayTypeAttr?.get(item).value;
-            const type = typeValue != null ? String(typeValue) : null;
+                // Convert type to string
+                const typeValue = rosterDayTypeAttr?.get(item).value;
+                const type = typeValue != null ? String(typeValue) : null;
 
-            return {
-                id: item.id,
-                userId,
-                date: rosterDayDateAttr?.get(item).value,
-                hours,
-                type
-            };
-        });
-    }, [rosterDaysDataSource, rosterDayUserRef, rosterDayDateAttr, rosterDayHoursAttr, rosterDayTypeAttr]);
+                return {
+                    id: item.id,
+                    userId,
+                    date: rosterDayDateAttr?.get(item).value,
+                    hours,
+                    type
+                };
+            })
+            .filter(day => currentPageUserIds.includes(day.userId));
+    }, [rosterDaysDataSource, rosterDayUserRef, rosterDayDateAttr, rosterDayHoursAttr, rosterDayTypeAttr, currentPageUserIds]);
 
     const calendarData = useMemo(() => {
         return buildCalendarData(users, dateRange, rosterPatterns, patternDays, rosterDays);
@@ -135,6 +161,12 @@ export function RosterCalendar({
 
     const handleViewToggle = () => {
         setViewMode(viewMode === "week" ? "month" : "week");
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1) {
+            setCurrentPage(newPage);
+        }
     };
 
     if (!usersDataSource || usersDataSource.status === "loading") {
@@ -201,6 +233,37 @@ export function RosterCalendar({
                     </tbody>
                 </table>
             </div>
+
+            {(hasNextPage || hasPrevPage) && (
+                <div className="roster-calendar-pagination">
+                    <button
+                        className="roster-calendar-pagination-btn"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={!hasPrevPage}
+                        title="Previous page"
+                    >
+                        ◀
+                    </button>
+
+                    <div className="roster-calendar-pagination-info">
+                        <span className="roster-calendar-page-number">
+                            Page {currentPage}
+                        </span>
+                        <span className="roster-calendar-total-users">
+                            ({users.length} users on this page)
+                        </span>
+                    </div>
+
+                    <button
+                        className="roster-calendar-pagination-btn"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={!hasNextPage}
+                        title="Next page"
+                    >
+                        ▶
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
