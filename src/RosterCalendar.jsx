@@ -65,10 +65,13 @@ export function RosterCalendar({
             } else {
                 usersDataSource.setFilter(undefined);
             }
-            // Reset to page 1 when search changes
-            setCurrentPage(1);
         }
     }, [searchText, usersDataSource, userNameAttr]);
+
+    // Reset to page 1 only when search text changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchText]);
 
     // Calculate total pages from totalCount
     const totalPages = useMemo(() => {
