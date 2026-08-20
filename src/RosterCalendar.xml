@@ -42,70 +42,70 @@
 
         <propertyGroup caption="Roster Patterns Configuration">
             <property key="patternEntityName" type="string" required="false">
-                <caption>Pattern Entity Name</caption>
+                <caption>Entity Name</caption>
                 <description>Full entity name (e.g., Roster.RosterPattern)</description>
             </property>
             <property key="patternUserXPath" type="string" required="false">
-                <caption>Pattern User XPath Pattern</caption>
+                <caption>Full XPath To User</caption>
                 <description>Full XPath association pattern to user (e.g., Roster.RosterPattern_DriverInfo/Tenancy.DriverInfo[Tenancy.DriverInfo_TenantUser)</description>
             </property>
             <property key="patternUserPath" type="string" required="false">
-                <caption>Pattern to User Association Path</caption>
+                <caption>User Association Path</caption>
                 <description>Association path to traverse for user ID (e.g., RosterPattern_DriverInfo/DriverInfo_TenantUser). Use / for multi-hop.</description>
             </property>
             <property key="patternStartDateAttr" type="string" required="false">
-                <caption>Pattern Start Date Attribute</caption>
+                <caption>Start Date</caption>
                 <description>Attribute name for start date (e.g., StartDate)</description>
             </property>
             <property key="patternEndDateAttr" type="string" required="false">
-                <caption>Pattern End Date Attribute</caption>
+                <caption>End Date</caption>
                 <description>Attribute name for end date (e.g., EndDate)</description>
             </property>
         </propertyGroup>
 
         <propertyGroup caption="Pattern Days Configuration">
             <property key="patternDayEntityName" type="string" required="false">
-                <caption>Pattern Day Entity Name</caption>
+                <caption>Entity Name</caption>
                 <description>Full entity name (e.g., MyModule.PatternDay)</description>
             </property>
             <property key="patternDayPatternAssociation" type="string" required="false">
-                <caption>PatternDay to Pattern Association</caption>
+                <caption>Pattern Association Path</caption>
                 <description>Association path from PatternDay to RosterPattern (e.g., PatternDay_RosterPattern)</description>
             </property>
             <property key="patternDayOfWeekAttr" type="string" required="false">
-                <caption>Day of Week Attribute</caption>
+                <caption>Day of Week</caption>
                 <description>Attribute name for day of week (e.g., DayOfWeek)</description>
             </property>
             <property key="patternDayAvailableAttr" type="string" required="false">
-                <caption>Available Attribute</caption>
-                <description>Attribute name for availability status (e.g., Available)</description>
+                <caption>Available</caption>
+                <description>Attribute name for availability status (e.g., Status)</description>
             </property>
         </propertyGroup>
 
         <propertyGroup caption="Roster Days Configuration">
             <property key="rosterDayEntityName" type="string" required="false">
-                <caption>Roster Day Entity Name</caption>
+                <caption>Entity Name</caption>
                 <description>Full entity name (e.g., Roster.RosterDay)</description>
             </property>
             <property key="rosterDayUserXPath" type="string" required="false">
-                <caption>RosterDay User XPath Pattern</caption>
+                <caption>Full XPath To User</caption>
                 <description>Full XPath association pattern to user (e.g., Roster.RosterDay_DriverInfo/Tenancy.DriverInfo[Tenancy.DriverInfo_TenantUser)</description>
             </property>
             <property key="rosterDayUserPath" type="string" required="false">
-                <caption>RosterDay to User Association Path</caption>
+                <caption>User Association Path</caption>
                 <description>Association path to traverse for user ID (e.g., RosterDay_DriverInfo/DriverInfo_TenantUser). Use / for multi-hop.</description>
             </property>
             <property key="rosterDayDateAttr" type="string" required="false">
-                <caption>Date Attribute</caption>
+                <caption>Date</caption>
                 <description>Attribute name for date (e.g., Date)</description>
             </property>
             <property key="rosterDayHoursAttr" type="string" required="false">
-                <caption>Hours Attribute</caption>
+                <caption>Hours</caption>
                 <description>Attribute name for hours worked (e.g., Hours)</description>
             </property>
             <property key="rosterDayTypeAttr" type="string" required="false">
-                <caption>Type Attribute</caption>
-                <description>Attribute name for day type (e.g., DayType)</description>
+                <caption>Type</caption>
+                <description>Attribute name for day type (e.g., RosterType)</description>
             </property>
         </propertyGroup>
 
