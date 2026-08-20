@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget id="roboyo.rostercalendar.RosterCalendar" pluginWidget="true" needsEntityContext="false" offlineCapable="true"
+        supportedPlatform="Web"
+        xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd">
+    <name>Roster Calendar</name>
+    <description>A customizable roster calendar that displays users or drivers as rows and dates as columns. Supports daily availability and status management for efficient workforce scheduling.</description>
+    <icon/>
+    <properties>
+        <propertyGroup caption="General">
+            <property key="defaultView" type="enumeration" defaultValue="week">
+                <caption>Default View</caption>
+                <description>Initial calendar view (week or month)</description>
+                <enumerationValues>
+                    <enumerationValue key="week">Week</enumerationValue>
+                    <enumerationValue key="month">Month</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="showWeekends" type="boolean" defaultValue="true">
+                <caption>Show Weekends</caption>
+                <description>Display Saturday and Sunday in the calendar</description>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Data Sources">
+            <property key="usersDataSource" type="datasource" isList="true" required="true">
+                <caption>Users</caption>
+                <description>List of users/drivers to display as rows</description>
+            </property>
+            <property key="userNameAttr" type="attribute" dataSource="usersDataSource" required="true">
+                <caption>User Name</caption>
+                <description>Attribute to display as user name</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+
+            <property key="rosterPatternsDataSource" type="datasource" isList="true" required="false">
+                <caption>Roster Patterns</caption>
+                <description>List of scheduled roster patterns</description>
+            </property>
+            <property key="patternStartDateAttr" type="attribute" dataSource="rosterPatternsDataSource" required="false">
+                <caption>Pattern Start Date</caption>
+                <description>Start date of the roster pattern</description>
+                <attributeTypes>
+                    <attributeType name="DateTime"/>
+                </attributeTypes>
+            </property>
+            <property key="patternEndDateAttr" type="attribute" dataSource="rosterPatternsDataSource" required="false">
+                <caption>Pattern End Date</caption>
+                <description>End date of the roster pattern</description>
+                <attributeTypes>
+                    <attributeType name="DateTime"/>
+                </attributeTypes>
+            </property>
+            <property key="patternUserAttr" type="attribute" dataSource="rosterPatternsDataSource" required="false">
+                <caption>Pattern User Reference</caption>
+                <description>Reference to the user entity</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+
+            <property key="patternDaysDataSource" type="datasource" isList="true" required="false">
+                <caption>Pattern Days</caption>
+                <description>Weekly pattern definition (7 records: Mon-Sun with availability status)</description>
+            </property>
+            <property key="patternDayOfWeekAttr" type="attribute" dataSource="patternDaysDataSource" required="false">
+                <caption>Day of Week</caption>
+                <description>Day of week enum (Monday, Tuesday, etc.)</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                    <attributeType name="Enum"/>
+                </attributeTypes>
+            </property>
+            <property key="patternDayPatternRefAttr" type="attribute" dataSource="patternDaysDataSource" required="false">
+                <caption>Pattern Reference</caption>
+                <description>Reference to the roster pattern</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="patternDayAvailableAttr" type="attribute" dataSource="patternDaysDataSource" required="false">
+                <caption>Available / Status</caption>
+                <description>Availability status (true/false or status enum)</description>
+                <attributeTypes>
+                    <attributeType name="Boolean"/>
+                    <attributeType name="String"/>
+                    <attributeType name="Enum"/>
+                </attributeTypes>
+            </property>
+
+            <property key="rosterDaysDataSource" type="datasource" isList="true" required="false">
+                <caption>Roster Days</caption>
+                <description>Actual working days, leaves, and hours worked</description>
+            </property>
+            <property key="rosterDayDateAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
+                <caption>Roster Day Date</caption>
+                <description>Date of the roster day</description>
+                <attributeTypes>
+                    <attributeType name="DateTime"/>
+                </attributeTypes>
+            </property>
+            <property key="rosterDayUserAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
+                <caption>Roster Day User Reference</caption>
+                <description>Reference to the user entity</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="rosterDayHoursAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
+                <caption>Hours Worked</caption>
+                <description>Total hours worked on this day</description>
+                <attributeTypes>
+                    <attributeType name="Decimal"/>
+                    <attributeType name="Integer"/>
+                    <attributeType name="Long"/>
+                </attributeTypes>
+            </property>
+            <property key="rosterDayTypeAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
+                <caption>Day Type</caption>
+                <description>Type of day (worked, leave, sick, etc.)</description>
+                <attributeTypes>
+                    <attributeType name="String"/>
+                    <attributeType name="Enum"/>
+                </attributeTypes>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Actions">
+            <property key="onCellClick" type="action" required="false">
+                <caption>On Cell Click</caption>
+                <description>Action triggered when a calendar cell is clicked</description>
+            </property>
+        </propertyGroup>
+
+        <propertyGroup caption="Appearance">
+            <property key="height" type="string" defaultValue="600px">
+                <caption>Calendar Height</caption>
+                <description>Fixed height of the calendar (e.g., 600px, 80vh)</description>
+            </property>
+        </propertyGroup>
+    </properties>
+</widget>
