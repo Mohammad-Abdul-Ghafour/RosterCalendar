@@ -30,7 +30,6 @@ export function RosterCalendar({
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState(defaultView);
     const [currentPage, setCurrentPage] = useState(1);
-    const [lastKnownTotalPages, setLastKnownTotalPages] = useState(null);
     const [rosterPatterns, setRosterPatterns] = useState([]);
     const [patternDays, setPatternDays] = useState([]);
     const [rosterDays, setRosterDays] = useState([]);
@@ -70,27 +69,14 @@ export function RosterCalendar({
     const users = useMemo(() => {
         if (!usersDataSource || usersDataSource.status !== "available") return [];
 
-        console.log("📊 [RosterCalendar] Users Data Source Retrieved:");
-        console.log(`  → Total count: ${usersDataSource.totalCount}`);
-        console.log(`  → Items retrieved: ${usersDataSource.items.length}`);
-        console.log(`  → Total pages: ${totalPages || 'calculating...'}`);
-        console.log(`  → Page ${currentPage} of ${totalPages || '?'}, Page Size: ${itemsPerPage}`);
-
-        const pageUsers = usersDataSource.items.map(item => ({
+        return usersDataSource.items.map(item => ({
             id: item.id,
             name: userNameAttr?.get(item).value || "Unnamed User"
         }));
-
-        console.log(`  → Displaying ${pageUsers.length} users on this page`);
-        console.log(`  → User IDs:`, pageUsers.map(u => u.id));
-
-        return pageUsers;
-    }, [usersDataSource, userNameAttr, itemsPerPage, currentPage, totalPages]);
+    }, [usersDataSource, userNameAttr]);
 
     const currentPageUserIds = useMemo(() => {
-        const ids = users.map(u => u.id);
-        console.log(`\n🔍 [RosterCalendar] Current Page User IDs for filtering:`, ids);
-        return ids;
+        return users.map(u => u.id);
     }, [users]);
 
     // Fetch data using Mendix Client API when users or date range changes
@@ -103,7 +89,6 @@ export function RosterCalendar({
         }
 
         if (!window.mx) {
-            console.warn("⚠️ [RosterCalendar] Mendix Client API (mx) not available");
             return;
         }
 
@@ -113,9 +98,6 @@ export function RosterCalendar({
         const endDate = dateRange[dateRange.length - 1];
         const startDateStr = formatDateForXPath(startDate);
         const endDateStr = formatDateForXPath(endDate);
-
-        console.log(`\n🔄 [RosterCalendar] Fetching data via Client API...`);
-        console.log(`  → Date range: ${startDateStr} to ${endDateStr}`);
 
         // Fetch Roster Patterns
         if (patternEntityName && patternUserXPath) {
@@ -130,7 +112,6 @@ export function RosterCalendar({
                 patternEndDateAttr
             );
         } else {
-            console.log(`  → Skipping patterns (not configured)`);
             setRosterPatterns([]);
         }
 
@@ -146,7 +127,6 @@ export function RosterCalendar({
                 rosterDayDateAttr
             );
         } else {
-            console.log(`  → Skipping roster days (not configured)`);
             setRosterDays([]);
         }
 
@@ -204,8 +184,6 @@ export function RosterCalendar({
                 const fullAssocName = getAssociationName(parts[0]);
                 currentId = obj.get(fullAssocName);
 
-                console.log(`    → Step ${step + 1}: obj.get("${fullAssocName}") = ${currentId}`);
-
                 if (!currentId || parts.length === 1) {
                     callback(currentId);
                     return;
@@ -221,8 +199,6 @@ export function RosterCalendar({
                         const fullAssocName = getAssociationName(parts[step]);
                         let nextId = intermediateObj.get(fullAssocName);
 
-                        console.log(`    → Step ${step + 1}: obj.get("${fullAssocName}") = ${nextId}`);
-
                         currentId = nextId;
                         step++;
 
@@ -233,7 +209,6 @@ export function RosterCalendar({
                         }
                     },
                     error: function() {
-                        console.error(`    → Step ${step + 1}: Failed to fetch object ${currentId}`);
                         callback(null);
                     }
                 });
@@ -259,14 +234,9 @@ export function RosterCalendar({
         const xpath = `//${entityName}${userConstraint}` +
             (startAttr && endAttr ? `[${startAttr} <= '${endDate}'][${endAttr} >= '${startDate}']` : '');
 
-        console.log(`\n📋 [RosterCalendar] Fetching Roster Patterns:`);
-        console.log(`  → XPath: ${xpath}`);
-
         window.mx.data.get({
             xpath: xpath,
             callback: function(objs) {
-                console.log(`  ✅ Retrieved ${objs.length} patterns from server`);
-                console.log(`  → Using association path: "${userPath || 'not configured'}"`);
 
                 if (!userPath || objs.length === 0) {
                     setRosterPatterns([]);
@@ -287,15 +257,12 @@ export function RosterCalendar({
 
                         processed++;
                         if (processed === objs.length) {
-                            console.log(`  → Pattern IDs:`, patterns.map(p => p.id));
-                            console.log(`  → Pattern User IDs:`, patterns.map(p => p.userId));
                             setRosterPatterns(patterns);
                         }
                     });
                 });
             },
-            error: function(err) {
-                console.error(`  ❌ Error fetching patterns:`, err);
+            error: function() {
                 setRosterPatterns([]);
             }
         });
@@ -314,13 +281,9 @@ export function RosterCalendar({
         const patternIdConstraints = patternIds.map(id => `${fullAssocName} = '${id}'`).join(' or ');
         const xpath = `//${entityName}[${patternIdConstraints}]`;
 
-        console.log(`\n📅 [RosterCalendar] Fetching Pattern Days:`);
-        console.log(`  → XPath: ${xpath}`);
-
         window.mx.data.get({
             xpath: xpath,
             callback: function(objs) {
-                console.log(`  ✅ Retrieved ${objs.length} pattern days from server`);
 
                 const days = objs.map(obj => {
                     // Get pattern ID from association
@@ -334,13 +297,9 @@ export function RosterCalendar({
                     };
                 });
 
-                console.log(`  → Pattern day count by pattern:`,
-                    days.reduce((acc, d) => ({ ...acc, [d.patternId]: (acc[d.patternId] || 0) + 1 }), {}));
-
                 setPatternDays(days);
             },
-            error: function(err) {
-                console.error(`  ❌ Error fetching pattern days:`, err);
+            error: function() {
                 setPatternDays([]);
             }
         });
@@ -360,15 +319,9 @@ export function RosterCalendar({
         const xpath = `//${entityName}${userConstraint}` +
             (dateAttr ? `[${dateAttr} >= '${startDate}'][${dateAttr} <= '${endDate}']` : '');
 
-        console.log(`\n🗓️  [RosterCalendar] Fetching Roster Days:`);
-        console.log(`  → XPath: ${xpath}`);
-
         window.mx.data.get({
             xpath: xpath,
             callback: function(objs) {
-                console.log(`  ✅ Retrieved ${objs.length} roster days from server`);
-                console.log(`  → Using association path: "${userPath || 'not configured'}"`);
-
                 if (!userPath || objs.length === 0) {
                     setRosterDays([]);
                     return;
@@ -391,16 +344,12 @@ export function RosterCalendar({
 
                         processed++;
                         if (processed === objs.length) {
-                            console.log(`  → Roster days by user:`,
-                                days.reduce((acc, d) => ({ ...acc, [d.userId]: (acc[d.userId] || 0) + 1 }), {}));
-                            console.log(`  → Sample data:`, days.slice(0, 3));
                             setRosterDays(days);
                         }
                     });
                 });
             },
-            error: function(err) {
-                console.error(`  ❌ Error fetching roster days:`, err);
+            error: function() {
                 setRosterDays([]);
             }
         });
@@ -408,20 +357,8 @@ export function RosterCalendar({
 
 
     const calendarData = useMemo(() => {
-        const data = buildCalendarData(users, dateRange, rosterPatterns, patternDays, rosterDays);
-
-        console.log(`\n📊 [RosterCalendar] === SUMMARY ===`);
-        console.log(`  Page: ${currentPage} of ${totalPages || '?'}`);
-        console.log(`  Users displayed: ${users.length}`);
-        console.log(`  Roster patterns (server-filtered): ${rosterPatterns.length}`);
-        console.log(`  Pattern days (server-filtered): ${patternDays.length}`);
-        console.log(`  Roster days (server-filtered): ${rosterDays.length}`);
-        console.log(`  Calendar rows: ${data.length}`);
-        console.log(`  Date range: ${dateRange.length} days`);
-        console.log(`=============================\n`);
-
-        return data;
-    }, [users, dateRange, rosterPatterns, patternDays, rosterDays, currentPage, totalPages]);
+        return buildCalendarData(users, dateRange, rosterPatterns, patternDays, rosterDays);
+    }, [users, dateRange, rosterPatterns, patternDays, rosterDays]);
 
     const handlePrevious = () => {
         const newDate = new Date(currentDate);
