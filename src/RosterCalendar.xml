@@ -139,9 +139,17 @@
         </propertyGroup>
 
         <propertyGroup caption="Appearance">
+            <property key="heightType" type="enumeration" defaultValue="fixed">
+                <caption>Height Type</caption>
+                <description>How to set the calendar height</description>
+                <enumerationValues>
+                    <enumerationValue key="fixed">Fixed</enumerationValue>
+                    <enumerationValue key="auto">Auto</enumerationValue>
+                </enumerationValues>
+            </property>
             <property key="height" type="string" defaultValue="600px">
-                <caption>Calendar Height</caption>
-                <description>Fixed height of the calendar (e.g., 600px, 80vh)</description>
+                <caption>Fixed Height</caption>
+                <description>Fixed height value (e.g., 600px, 80vh) - only used when Height Type is Fixed</description>
             </property>
         </propertyGroup>
     </properties>

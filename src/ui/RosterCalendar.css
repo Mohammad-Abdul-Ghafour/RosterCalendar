@@ -310,17 +310,20 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
+    min-width: 80px;
 }
 
 .roster-calendar-page-number {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 700;
     color: #212529;
+    line-height: 1;
 }
 
-.roster-calendar-total-users {
-    font-size: 12px;
+.roster-calendar-page-total {
+    font-size: 13px;
+    font-weight: 500;
     color: #6c757d;
 }
 

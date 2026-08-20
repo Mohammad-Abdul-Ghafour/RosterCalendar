@@ -6,6 +6,7 @@ export function RosterCalendar({
     defaultView,
     showWeekends,
     pageSize,
+    heightType,
     usersDataSource,
     userNameAttr,
     rosterPatternsDataSource,
@@ -27,6 +28,7 @@ export function RosterCalendar({
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState(defaultView);
     const [currentPage, setCurrentPage] = useState(1);
+    const [maxPageSeen, setMaxPageSeen] = useState(1);
 
     const dateRange = useMemo(() => {
         return generateDateRange(currentDate, viewMode, showWeekends);
@@ -45,6 +47,18 @@ export function RosterCalendar({
     // Check if there are more pages by seeing if we got extra item
     const hasNextPage = usersDataSource?.items?.length > itemsPerPage;
     const hasPrevPage = currentPage > 1;
+
+    // Track the highest page we know exists
+    useMemo(() => {
+        if (hasNextPage && currentPage >= maxPageSeen) {
+            setMaxPageSeen(currentPage + 1);
+        } else if (!hasNextPage && currentPage > maxPageSeen) {
+            setMaxPageSeen(currentPage);
+        }
+    }, [hasNextPage, currentPage, maxPageSeen]);
+
+    // Calculate estimated total pages
+    const estimatedTotalPages = hasNextPage ? maxPageSeen + 1 : maxPageSeen;
 
     const users = useMemo(() => {
         if (!usersDataSource || usersDataSource.status !== "available") return [];
@@ -173,8 +187,10 @@ export function RosterCalendar({
         return <div className="roster-calendar-loading">Loading...</div>;
     }
 
+    const containerStyle = heightType === "auto" ? {} : { height };
+
     return (
-        <div className="roster-calendar-container" style={{ height }}>
+        <div className="roster-calendar-container" style={containerStyle}>
             <div className="roster-calendar-header">
                 <div className="roster-calendar-nav">
                     <button className="roster-calendar-btn" onClick={handlePrevious} title="Previous">
@@ -246,11 +262,9 @@ export function RosterCalendar({
                     </button>
 
                     <div className="roster-calendar-pagination-info">
-                        <span className="roster-calendar-page-number">
-                            Page {currentPage}
-                        </span>
-                        <span className="roster-calendar-total-users">
-                            ({users.length} users on this page)
+                        <span className="roster-calendar-page-number">{currentPage}</span>
+                        <span className="roster-calendar-page-total">
+                            {hasNextPage ? `of ${estimatedTotalPages}+` : `of ${estimatedTotalPages}`}
                         </span>
                     </div>
 
