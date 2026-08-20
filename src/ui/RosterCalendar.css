@@ -19,6 +19,13 @@
     padding: 16px 20px;
     background: #f8f9fa;
     border-bottom: 2px solid #e0e0e0;
+    gap: 16px;
+}
+
+.roster-calendar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .roster-calendar-nav {
@@ -65,6 +72,27 @@
 .roster-calendar-view-toggle:hover {
     background: #0056b3;
     border-color: #0056b3;
+}
+
+.roster-calendar-search {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #495057;
+    background: #ffffff;
+    min-width: 200px;
+    transition: border-color 0.2s;
+}
+
+.roster-calendar-search:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.roster-calendar-search::placeholder {
+    color: #adb5bd;
 }
 
 .roster-calendar-grid-wrapper {

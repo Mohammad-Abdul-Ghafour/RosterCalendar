@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import classNames from "classnames";
+import { contains, attribute, literal } from "mendix/filters/builders";
 import "./ui/RosterCalendar.css";
 
 export function RosterCalendar({
@@ -30,6 +31,7 @@ export function RosterCalendar({
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState(defaultView);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchText, setSearchText] = useState("");
     const [rosterPatterns, setRosterPatterns] = useState([]);
     const [patternDays, setPatternDays] = useState([]);
     const [rosterDays, setRosterDays] = useState([]);
@@ -53,6 +55,20 @@ export function RosterCalendar({
             }
         }
     }, [usersDataSource, currentPage, itemsPerPage]);
+
+    // Apply search filter
+    useEffect(() => {
+        if (usersDataSource && usersDataSource.setFilter && userNameAttr) {
+            if (searchText.trim()) {
+                const filterCondition = contains(attribute(userNameAttr.id), literal(searchText));
+                usersDataSource.setFilter(filterCondition);
+            } else {
+                usersDataSource.setFilter(undefined);
+            }
+            // Reset to page 1 when search changes
+            setCurrentPage(1);
+        }
+    }, [searchText, usersDataSource, userNameAttr]);
 
     // Calculate total pages from totalCount
     const totalPages = useMemo(() => {
@@ -420,9 +436,18 @@ export function RosterCalendar({
                         ▶
                     </button>
                 </div>
-                <button className="roster-calendar-btn roster-calendar-view-toggle" onClick={handleViewToggle}>
-                    {viewMode === "week" ? "Month View" : "Week View"}
-                </button>
+                <div className="roster-calendar-header-actions">
+                    <input
+                        type="text"
+                        className="roster-calendar-search"
+                        placeholder="Search users..."
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                    />
+                    <button className="roster-calendar-btn roster-calendar-view-toggle" onClick={handleViewToggle}>
+                        {viewMode === "week" ? "Month View" : "Week View"}
+                    </button>
+                </div>
             </div>
 
             <div className="roster-calendar-grid-wrapper">
