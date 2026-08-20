@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import classNames from "classnames";
 import "./ui/RosterCalendar.css";
 
@@ -9,17 +9,19 @@ export function RosterCalendar({
     heightType,
     usersDataSource,
     userNameAttr,
-    rosterPatternsDataSource,
+    patternEntityName,
+    patternUserXPath,
+    patternUserPath,
     patternStartDateAttr,
     patternEndDateAttr,
-    patternUserRef,
-    patternDaysDataSource,
+    patternDayEntityName,
+    patternDayPatternAssociation,
     patternDayOfWeekAttr,
-    patternDayPatternRef,
     patternDayAvailableAttr,
-    rosterDaysDataSource,
+    rosterDayEntityName,
+    rosterDayUserXPath,
+    rosterDayUserPath,
     rosterDayDateAttr,
-    rosterDayUserRef,
     rosterDayHoursAttr,
     rosterDayTypeAttr,
     onCellClick,
@@ -28,7 +30,11 @@ export function RosterCalendar({
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState(defaultView);
     const [currentPage, setCurrentPage] = useState(1);
-    const [maxPageSeen, setMaxPageSeen] = useState(1);
+    const [lastKnownPage, setLastKnownPage] = useState(null);
+    const [rosterPatterns, setRosterPatterns] = useState([]);
+    const [patternDays, setPatternDays] = useState([]);
+    const [rosterDays, setRosterDays] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     const dateRange = useMemo(() => {
         return generateDateRange(currentDate, viewMode, showWeekends);
@@ -39,7 +45,7 @@ export function RosterCalendar({
     // Set offset and limit for pagination - request one extra to detect if there are more pages
     useMemo(() => {
         if (usersDataSource && usersDataSource.setLimit && usersDataSource.setOffset) {
-            usersDataSource.setLimit(itemsPerPage + 1); // Request one extra
+            usersDataSource.setLimit(itemsPerPage + 1);
             usersDataSource.setOffset((currentPage - 1) * itemsPerPage);
         }
     }, [usersDataSource, currentPage, itemsPerPage]);
@@ -48,104 +54,371 @@ export function RosterCalendar({
     const hasNextPage = usersDataSource?.items?.length > itemsPerPage;
     const hasPrevPage = currentPage > 1;
 
-    // Track the highest page we know exists
+    // Track the last page (when we find a page with no next page)
     useMemo(() => {
-        if (hasNextPage && currentPage >= maxPageSeen) {
-            setMaxPageSeen(currentPage + 1);
-        } else if (!hasNextPage && currentPage > maxPageSeen) {
-            setMaxPageSeen(currentPage);
+        if (!hasNextPage && usersDataSource?.status === "available") {
+            if (lastKnownPage === null || currentPage > lastKnownPage) {
+                setLastKnownPage(currentPage);
+            }
         }
-    }, [hasNextPage, currentPage, maxPageSeen]);
+    }, [hasNextPage, currentPage, usersDataSource, lastKnownPage]);
 
-    // Calculate estimated total pages
-    const estimatedTotalPages = hasNextPage ? maxPageSeen + 1 : maxPageSeen;
+    // Calculate total pages
+    const totalPages = lastKnownPage !== null ? lastKnownPage : (hasNextPage ? null : currentPage);
 
     const users = useMemo(() => {
         if (!usersDataSource || usersDataSource.status !== "available") return [];
-        // Take only the requested page size (we fetched +1 to check for next page)
-        return usersDataSource.items.slice(0, itemsPerPage).map(item => ({
+
+        console.log("📊 [RosterCalendar] Users Data Source Retrieved:");
+        console.log(`  → Total items from DB: ${usersDataSource.items.length}`);
+        console.log(`  → Page ${currentPage}, Page Size: ${itemsPerPage}`);
+
+        const pageUsers = usersDataSource.items.slice(0, itemsPerPage).map(item => ({
             id: item.id,
             name: userNameAttr?.get(item).value || "Unnamed User"
         }));
-    }, [usersDataSource, userNameAttr, itemsPerPage]);
 
-    // Get user IDs on current page for filtering
+        console.log(`  → Displaying ${pageUsers.length} users on this page`);
+        console.log(`  → User IDs:`, pageUsers.map(u => u.id));
+
+        return pageUsers;
+    }, [usersDataSource, userNameAttr, itemsPerPage, currentPage]);
+
     const currentPageUserIds = useMemo(() => {
-        return users.map(u => u.id);
+        const ids = users.map(u => u.id);
+        console.log(`\n🔍 [RosterCalendar] Current Page User IDs for filtering:`, ids);
+        return ids;
     }, [users]);
 
-    const rosterPatterns = useMemo(() => {
-        if (!rosterPatternsDataSource || rosterPatternsDataSource.status !== "available") return [];
-        return rosterPatternsDataSource.items
-            .map(item => {
-                // Get user object from association and extract ID
-                const userObj = patternUserRef?.get(item).value;
-                const userId = userObj?.id || null;
+    // Fetch data using Mendix Client API when users or date range changes
+    useEffect(() => {
+        if (currentPageUserIds.length === 0) {
+            setRosterPatterns([]);
+            setPatternDays([]);
+            setRosterDays([]);
+            return;
+        }
 
-                return {
-                    id: item.id,
-                    userId,
-                    startDate: patternStartDateAttr?.get(item).value,
-                    endDate: patternEndDateAttr?.get(item).value
-                };
-            })
-            .filter(pattern => currentPageUserIds.includes(pattern.userId));
-    }, [rosterPatternsDataSource, patternUserRef, patternStartDateAttr, patternEndDateAttr, currentPageUserIds]);
+        if (!window.mx) {
+            console.warn("⚠️ [RosterCalendar] Mendix Client API (mx) not available");
+            return;
+        }
 
-    const patternDays = useMemo(() => {
-        if (!patternDaysDataSource || patternDaysDataSource.status !== "available") return [];
-        return patternDaysDataSource.items.map(item => {
-            // Convert day of week to primitive
-            const dayOfWeekValue = patternDayOfWeekAttr?.get(item).value;
-            const dayOfWeek = normalizeDayOfWeek(dayOfWeekValue);
+        setLoading(true);
 
-            // Convert available to boolean
-            const availableValue = patternDayAvailableAttr?.get(item).value;
-            const available = normalizeAvailability(availableValue);
+        const startDate = dateRange[0];
+        const endDate = dateRange[dateRange.length - 1];
+        const startDateStr = formatDateForXPath(startDate);
+        const endDateStr = formatDateForXPath(endDate);
 
-            // Get pattern object from association and extract ID
-            const patternObj = patternDayPatternRef?.get(item).value;
-            const patternId = patternObj?.id || null;
+        console.log(`\n🔄 [RosterCalendar] Fetching data via Client API...`);
+        console.log(`  → Date range: ${startDateStr} to ${endDateStr}`);
 
-            return {
-                id: item.id,
-                patternId,
-                dayOfWeek,
-                available
-            };
+        // Fetch Roster Patterns
+        if (patternEntityName && patternUserXPath) {
+            fetchRosterPatterns(
+                patternEntityName,
+                patternUserXPath,
+                patternUserPath,
+                currentPageUserIds,
+                startDateStr,
+                endDateStr,
+                patternStartDateAttr,
+                patternEndDateAttr
+            );
+        } else {
+            console.log(`  → Skipping patterns (not configured)`);
+            setRosterPatterns([]);
+        }
+
+        // Fetch Roster Days
+        if (rosterDayEntityName && rosterDayUserXPath) {
+            fetchRosterDays(
+                rosterDayEntityName,
+                rosterDayUserXPath,
+                rosterDayUserPath,
+                currentPageUserIds,
+                startDateStr,
+                endDateStr,
+                rosterDayDateAttr
+            );
+        } else {
+            console.log(`  → Skipping roster days (not configured)`);
+            setRosterDays([]);
+        }
+
+        setLoading(false);
+    }, [currentPageUserIds, dateRange, patternEntityName, rosterDayEntityName]);
+
+    // Fetch Pattern Days when patterns change
+    useEffect(() => {
+        if (rosterPatterns.length === 0) {
+            setPatternDays([]);
+            return;
+        }
+
+        if (!window.mx || !patternDayEntityName || !patternDayPatternAssociation) {
+            return;
+        }
+
+        fetchPatternDays(
+            patternDayEntityName,
+            patternDayPatternAssociation,
+            rosterPatterns.map(p => p.id)
+        );
+    }, [rosterPatterns, patternDayEntityName]);
+
+    // Helper function to traverse association path and get final user ID
+    // Supports both formats:
+    //   Simple: "RosterPattern_DriverInfo/DriverInfo_TenantUser"
+    //   Full:   "Roster.RosterPattern_DriverInfo/Tenancy.DriverInfo_TenantUser"
+    function traverseAssociationPath(obj, pathString, entityName, callback) {
+        if (!pathString) {
+            callback(null);
+            return;
+        }
+
+        // Split path by "/" to get association steps
+        const parts = pathString.split('/');
+        const defaultModule = entityName.split('.')[0];
+
+        let currentId = null;
+        let step = 0;
+
+        function getAssociationName(assocPart) {
+            // If already has module prefix (contains "."), use as-is
+            // Otherwise, add default module prefix
+            if (assocPart.includes('.')) {
+                return assocPart;
+            } else {
+                return `${defaultModule}.${assocPart}`;
+            }
+        }
+
+        function processStep() {
+            if (step === 0) {
+                // First step: get from current object
+                const fullAssocName = getAssociationName(parts[0]);
+                currentId = obj.get(fullAssocName);
+
+                console.log(`    → Step ${step + 1}: obj.get("${fullAssocName}") = ${currentId}`);
+
+                if (!currentId || parts.length === 1) {
+                    callback(currentId);
+                    return;
+                }
+
+                step++;
+                processStep();
+            } else if (step < parts.length) {
+                // Subsequent steps: fetch object and get next association
+                window.mx.data.get({
+                    guid: currentId,
+                    callback: function(intermediateObj) {
+                        const fullAssocName = getAssociationName(parts[step]);
+                        let nextId = intermediateObj.get(fullAssocName);
+
+                        console.log(`    → Step ${step + 1}: obj.get("${fullAssocName}") = ${nextId}`);
+
+                        currentId = nextId;
+                        step++;
+
+                        if (step === parts.length) {
+                            callback(currentId);
+                        } else {
+                            processStep();
+                        }
+                    },
+                    error: function() {
+                        console.error(`    → Step ${step + 1}: Failed to fetch object ${currentId}`);
+                        callback(null);
+                    }
+                });
+            }
+        }
+
+        processStep();
+    }
+
+    function fetchRosterPatterns(entityName, userXPathPattern, userPath, userIds, startDate, endDate, startAttr, endAttr) {
+        // User provides pattern like: "Roster.RosterPattern_DriverInfo/Tenancy.DriverInfo[Tenancy.DriverInfo_TenantUser"
+        // We complete it with: " = guid1 or Tenancy.DriverInfo_TenantUser = guid2]]"
+
+        // Build user ID conditions
+        const lastPart = userXPathPattern.substring(userXPathPattern.lastIndexOf('[') + 1); // Gets "Tenancy.DriverInfo_TenantUser"
+        const userConditions = userIds.map(id => `${lastPart} = ${id}`).join(' or ');
+
+        // Complete the XPath
+        const userConstraint = `[${userXPathPattern} = ${userIds[0]}` +
+            (userIds.length > 1 ? ` or ${userIds.slice(1).map(id => `${lastPart} = ${id}`).join(' or ')}` : '') +
+            ']]';
+
+        const xpath = `//${entityName}${userConstraint}` +
+            (startAttr && endAttr ? `[${startAttr} <= '${endDate}'][${endAttr} >= '${startDate}']` : '');
+
+        console.log(`\n📋 [RosterCalendar] Fetching Roster Patterns:`);
+        console.log(`  → XPath: ${xpath}`);
+
+        window.mx.data.get({
+            xpath: xpath,
+            callback: function(objs) {
+                console.log(`  ✅ Retrieved ${objs.length} patterns from server`);
+                console.log(`  → Using association path: "${userPath || 'not configured'}"`);
+
+                if (!userPath || objs.length === 0) {
+                    setRosterPatterns([]);
+                    return;
+                }
+
+                let processed = 0;
+                const patterns = [];
+
+                objs.forEach(obj => {
+                    traverseAssociationPath(obj, userPath, entityName, (userId) => {
+                        patterns.push({
+                            id: obj.getGuid(),
+                            startDate: startAttr ? obj.get(startAttr) : null,
+                            endDate: endAttr ? obj.get(endAttr) : null,
+                            userId: userId
+                        });
+
+                        processed++;
+                        if (processed === objs.length) {
+                            console.log(`  → Pattern IDs:`, patterns.map(p => p.id));
+                            console.log(`  → Pattern User IDs:`, patterns.map(p => p.userId));
+                            setRosterPatterns(patterns);
+                        }
+                    });
+                });
+            },
+            error: function(err) {
+                console.error(`  ❌ Error fetching patterns:`, err);
+                setRosterPatterns([]);
+            }
         });
-    }, [patternDaysDataSource, patternDayPatternRef, patternDayOfWeekAttr, patternDayAvailableAttr]);
+    }
 
-    const rosterDays = useMemo(() => {
-        if (!rosterDaysDataSource || rosterDaysDataSource.status !== "available") return [];
-        return rosterDaysDataSource.items
-            .map(item => {
-                // Get user object from association and extract ID
-                const userObj = rosterDayUserRef?.get(item).value;
-                const userId = userObj?.id || null;
 
-                // Convert hours to number (handle BigNumber or other objects)
-                const hoursValue = rosterDayHoursAttr?.get(item).value;
-                const hours = hoursValue != null ? Number(hoursValue) : null;
+    function fetchPatternDays(entityName, associationPath, patternIds) {
+        if (patternIds.length === 0) {
+            setPatternDays([]);
+            return;
+        }
 
-                // Convert type to string
-                const typeValue = rosterDayTypeAttr?.get(item).value;
-                const type = typeValue != null ? String(typeValue) : null;
+        // Build OR conditions with module prefix
+        const module = entityName.split('.')[0];
+        const fullAssocName = associationPath.includes('.') ? associationPath : `${module}.${associationPath}`;
+        const patternIdConstraints = patternIds.map(id => `${fullAssocName} = '${id}'`).join(' or ');
+        const xpath = `//${entityName}[${patternIdConstraints}]`;
 
-                return {
-                    id: item.id,
-                    userId,
-                    date: rosterDayDateAttr?.get(item).value,
-                    hours,
-                    type
-                };
-            })
-            .filter(day => currentPageUserIds.includes(day.userId));
-    }, [rosterDaysDataSource, rosterDayUserRef, rosterDayDateAttr, rosterDayHoursAttr, rosterDayTypeAttr, currentPageUserIds]);
+        console.log(`\n📅 [RosterCalendar] Fetching Pattern Days:`);
+        console.log(`  → XPath: ${xpath}`);
+
+        window.mx.data.get({
+            xpath: xpath,
+            callback: function(objs) {
+                console.log(`  ✅ Retrieved ${objs.length} pattern days from server`);
+
+                const days = objs.map(obj => {
+                    // Get pattern ID from association
+                    const patternId = obj.get(fullAssocName);
+
+                    return {
+                        id: obj.getGuid(),
+                        patternId: patternId,
+                        dayOfWeek: normalizeDayOfWeek(obj.get(patternDayOfWeekAttr || 'DayOfWeek')),
+                        available: normalizeAvailability(obj.get(patternDayAvailableAttr || 'Available'))
+                    };
+                });
+
+                console.log(`  → Pattern day count by pattern:`,
+                    days.reduce((acc, d) => ({ ...acc, [d.patternId]: (acc[d.patternId] || 0) + 1 }), {}));
+
+                setPatternDays(days);
+            },
+            error: function(err) {
+                console.error(`  ❌ Error fetching pattern days:`, err);
+                setPatternDays([]);
+            }
+        });
+    }
+
+    function fetchRosterDays(entityName, userXPathPattern, userPath, userIds, startDate, endDate, dateAttr) {
+        // User provides pattern like: "Roster.RosterDay_DriverInfo/Tenancy.DriverInfo[Tenancy.DriverInfo_TenantUser"
+        // We complete it with user IDs and date filters
+
+        const lastPart = userXPathPattern.substring(userXPathPattern.lastIndexOf('[') + 1);
+        const userConditions = userIds.map(id => `${lastPart} = ${id}`).join(' or ');
+
+        const userConstraint = `[${userXPathPattern} = ${userIds[0]}` +
+            (userIds.length > 1 ? ` or ${userIds.slice(1).map(id => `${lastPart} = ${id}`).join(' or ')}` : '') +
+            ']]';
+
+        const xpath = `//${entityName}${userConstraint}` +
+            (dateAttr ? `[${dateAttr} >= '${startDate}'][${dateAttr} <= '${endDate}']` : '');
+
+        console.log(`\n🗓️  [RosterCalendar] Fetching Roster Days:`);
+        console.log(`  → XPath: ${xpath}`);
+
+        window.mx.data.get({
+            xpath: xpath,
+            callback: function(objs) {
+                console.log(`  ✅ Retrieved ${objs.length} roster days from server`);
+                console.log(`  → Using association path: "${userPath || 'not configured'}"`);
+
+                if (!userPath || objs.length === 0) {
+                    setRosterDays([]);
+                    return;
+                }
+
+                let processed = 0;
+                const days = [];
+
+                objs.forEach(obj => {
+                    traverseAssociationPath(obj, userPath, entityName, (userId) => {
+                        days.push({
+                            id: obj.getGuid(),
+                            userId: userId,
+                            date: obj.get(rosterDayDateAttr || 'Date'),
+                            hours: obj.get(rosterDayHoursAttr || 'Hours') != null ?
+                                Number(obj.get(rosterDayHoursAttr || 'Hours')) : null,
+                            type: obj.get(rosterDayTypeAttr || 'DayType') != null ?
+                                String(obj.get(rosterDayTypeAttr || 'DayType')) : null
+                        });
+
+                        processed++;
+                        if (processed === objs.length) {
+                            console.log(`  → Roster days by user:`,
+                                days.reduce((acc, d) => ({ ...acc, [d.userId]: (acc[d.userId] || 0) + 1 }), {}));
+                            console.log(`  → Sample data:`, days.slice(0, 3));
+                            setRosterDays(days);
+                        }
+                    });
+                });
+            },
+            error: function(err) {
+                console.error(`  ❌ Error fetching roster days:`, err);
+                setRosterDays([]);
+            }
+        });
+    }
+
 
     const calendarData = useMemo(() => {
-        return buildCalendarData(users, dateRange, rosterPatterns, patternDays, rosterDays);
-    }, [users, dateRange, rosterPatterns, patternDays, rosterDays]);
+        const data = buildCalendarData(users, dateRange, rosterPatterns, patternDays, rosterDays);
+
+        console.log(`\n📊 [RosterCalendar] === SUMMARY ===`);
+        console.log(`  Page: ${currentPage} of ${totalPages || '?'}`);
+        console.log(`  Users displayed: ${users.length}`);
+        console.log(`  Roster patterns (server-filtered): ${rosterPatterns.length}`);
+        console.log(`  Pattern days (server-filtered): ${patternDays.length}`);
+        console.log(`  Roster days (server-filtered): ${rosterDays.length}`);
+        console.log(`  Calendar rows: ${data.length}`);
+        console.log(`  Date range: ${dateRange.length} days`);
+        console.log(`=============================\n`);
+
+        return data;
+    }, [users, dateRange, rosterPatterns, patternDays, rosterDays, currentPage, totalPages]);
 
     const handlePrevious = () => {
         const newDate = new Date(currentDate);
@@ -184,7 +457,11 @@ export function RosterCalendar({
     };
 
     if (!usersDataSource || usersDataSource.status === "loading") {
-        return <div className="roster-calendar-loading">Loading...</div>;
+        return <div className="roster-calendar-loading">Loading users...</div>;
+    }
+
+    if (loading) {
+        return <div className="roster-calendar-loading">Loading roster data...</div>;
     }
 
     const containerStyle = heightType === "auto" ? {} : { height };
@@ -229,21 +506,33 @@ export function RosterCalendar({
                                 <td className="roster-calendar-user-cell">
                                     <span className="roster-calendar-user-name">{userRow.userName}</span>
                                 </td>
-                                {userRow.days.map((dayCell, idx) => (
-                                    <td
-                                        key={idx}
-                                        className={classNames("roster-calendar-day-cell", {
-                                            "is-weekend": dayCell.isWeekend,
-                                            "is-past": dayCell.isPast,
-                                            "is-today": dayCell.isToday,
-                                            "has-pattern": dayCell.hasPattern,
-                                            "has-actual": dayCell.hasActual
-                                        })}
-                                        onClick={() => handleCellClick(userRow, dayCell.date, dayCell)}
-                                    >
-                                        <CellContent cell={dayCell} />
-                                    </td>
-                                ))}
+                                {userRow.days.map((dayCell, idx) => {
+                                    let cellColorClass = "";
+                                    if (dayCell.hasActual) {
+                                        const typeStr = String(dayCell.actualType || "work").toLowerCase();
+                                        if (typeStr === "worked" || typeStr === "work") {
+                                            cellColorClass = "cell-worked";
+                                        } else if (typeStr === "leave") {
+                                            cellColorClass = "cell-leave";
+                                        } else if (typeStr === "sick") {
+                                            cellColorClass = "cell-sick";
+                                        }
+                                    } else if (dayCell.hasPattern) {
+                                        cellColorClass = dayCell.patternAvailable ? "cell-available" : "cell-off";
+                                    }
+
+                                    return (
+                                        <td
+                                            key={idx}
+                                            className={classNames("roster-calendar-day-cell", cellColorClass, {
+                                                "is-today": dayCell.isToday
+                                            })}
+                                            onClick={() => handleCellClick(userRow, dayCell.date, dayCell)}
+                                        >
+                                            <CellContent cell={dayCell} />
+                                        </td>
+                                    );
+                                })}
                             </tr>
                         ))}
                     </tbody>
@@ -264,7 +553,7 @@ export function RosterCalendar({
                     <div className="roster-calendar-pagination-info">
                         <span className="roster-calendar-page-number">{currentPage}</span>
                         <span className="roster-calendar-page-total">
-                            {hasNextPage ? `of ${estimatedTotalPages}+` : `of ${estimatedTotalPages}`}
+                            {totalPages !== null ? `of ${totalPages}` : 'of ?'}
                         </span>
                     </div>
 
@@ -284,11 +573,8 @@ export function RosterCalendar({
 
 function CellContent({ cell }) {
     if (cell.hasActual) {
-        // Ensure type is a string
         const typeStr = String(cell.actualType || "work").toLowerCase();
         const typeLabel = String(cell.actualType || "Work");
-
-        // Ensure hours is a number
         const hoursNum = Number(cell.hours);
 
         return (
@@ -308,7 +594,7 @@ function CellContent({ cell }) {
             <div className="roster-calendar-cell-content">
                 <div
                     className={`roster-calendar-cell-type type-${
-                        cell.patternAvailable ? "scheduled" : "off"
+                        cell.patternAvailable ? "available" : "off"
                     }`}
                 >
                     {cell.patternAvailable ? "Available" : "Off"}
@@ -382,6 +668,13 @@ function formatDayName(date) {
     return date.toLocaleDateString("en-US", { weekday: "short" });
 }
 
+function formatDateForXPath(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 function buildCalendarData(users, dateRange, rosterPatterns, patternDays, rosterDays) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -407,7 +700,6 @@ function buildCalendarData(users, dateRange, rosterPatterns, patternDays, roster
 
             for (const pattern of userPatterns) {
                 if (isDateInRange(date, pattern.startDate, pattern.endDate)) {
-                    // Find the pattern day for this day of week
                     const matchingPatternDay = patternDays.find(
                         pd => pd.patternId === pattern.id && pd.dayOfWeek === dayOfWeek
                     );

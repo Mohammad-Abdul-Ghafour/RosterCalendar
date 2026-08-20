@@ -38,96 +38,74 @@
                     <attributeType name="String"/>
                 </attributeTypes>
             </property>
+        </propertyGroup>
 
-            <property key="rosterPatternsDataSource" type="datasource" isList="true" required="false">
-                <caption>Roster Patterns</caption>
-                <description>List of scheduled roster patterns</description>
+        <propertyGroup caption="Roster Patterns Configuration">
+            <property key="patternEntityName" type="string" required="false">
+                <caption>Pattern Entity Name</caption>
+                <description>Full entity name (e.g., Roster.RosterPattern)</description>
             </property>
-            <property key="patternStartDateAttr" type="attribute" dataSource="rosterPatternsDataSource" required="false">
-                <caption>Pattern Start Date</caption>
-                <description>Start date of the roster pattern</description>
-                <attributeTypes>
-                    <attributeType name="DateTime"/>
-                </attributeTypes>
+            <property key="patternUserXPath" type="string" required="false">
+                <caption>Pattern User XPath Pattern</caption>
+                <description>Full XPath association pattern to user (e.g., Roster.RosterPattern_DriverInfo/Tenancy.DriverInfo[Tenancy.DriverInfo_TenantUser)</description>
             </property>
-            <property key="patternEndDateAttr" type="attribute" dataSource="rosterPatternsDataSource" required="false">
-                <caption>Pattern End Date</caption>
-                <description>End date of the roster pattern</description>
-                <attributeTypes>
-                    <attributeType name="DateTime"/>
-                </attributeTypes>
+            <property key="patternUserPath" type="string" required="false">
+                <caption>Pattern to User Association Path</caption>
+                <description>Association path to traverse for user ID (e.g., RosterPattern_DriverInfo/DriverInfo_TenantUser). Use / for multi-hop.</description>
             </property>
-            <property key="patternUserRef" type="association" dataSource="rosterPatternsDataSource" selectableObjects="usersDataSource" required="false">
-                <caption>Pattern User Association</caption>
-                <description>Association path to the user (e.g., DriverInfo/TenantUser)</description>
-                <associationTypes>
-                    <associationType name="Reference"/>
-                </associationTypes>
+            <property key="patternStartDateAttr" type="string" required="false">
+                <caption>Pattern Start Date Attribute</caption>
+                <description>Attribute name for start date (e.g., StartDate)</description>
             </property>
+            <property key="patternEndDateAttr" type="string" required="false">
+                <caption>Pattern End Date Attribute</caption>
+                <description>Attribute name for end date (e.g., EndDate)</description>
+            </property>
+        </propertyGroup>
 
-            <property key="patternDaysDataSource" type="datasource" isList="true" required="false">
-                <caption>Pattern Days</caption>
-                <description>Weekly pattern definition (7 records: Mon-Sun with availability status)</description>
+        <propertyGroup caption="Pattern Days Configuration">
+            <property key="patternDayEntityName" type="string" required="false">
+                <caption>Pattern Day Entity Name</caption>
+                <description>Full entity name (e.g., MyModule.PatternDay)</description>
             </property>
-            <property key="patternDayOfWeekAttr" type="attribute" dataSource="patternDaysDataSource" required="false">
-                <caption>Day of Week</caption>
-                <description>Day of week enum (Monday, Tuesday, etc.)</description>
-                <attributeTypes>
-                    <attributeType name="String"/>
-                    <attributeType name="Enum"/>
-                </attributeTypes>
+            <property key="patternDayPatternAssociation" type="string" required="false">
+                <caption>PatternDay to Pattern Association</caption>
+                <description>Association path from PatternDay to RosterPattern (e.g., PatternDay_RosterPattern)</description>
             </property>
-            <property key="patternDayPatternRef" type="association" dataSource="patternDaysDataSource" selectableObjects="rosterPatternsDataSource" required="false">
-                <caption>Pattern Association</caption>
-                <description>Association to the roster pattern</description>
-                <associationTypes>
-                    <associationType name="Reference"/>
-                </associationTypes>
+            <property key="patternDayOfWeekAttr" type="string" required="false">
+                <caption>Day of Week Attribute</caption>
+                <description>Attribute name for day of week (e.g., DayOfWeek)</description>
             </property>
-            <property key="patternDayAvailableAttr" type="attribute" dataSource="patternDaysDataSource" required="false">
-                <caption>Available / Status</caption>
-                <description>Availability status (true/false or status enum)</description>
-                <attributeTypes>
-                    <attributeType name="Boolean"/>
-                    <attributeType name="String"/>
-                    <attributeType name="Enum"/>
-                </attributeTypes>
+            <property key="patternDayAvailableAttr" type="string" required="false">
+                <caption>Available Attribute</caption>
+                <description>Attribute name for availability status (e.g., Available)</description>
             </property>
+        </propertyGroup>
 
-            <property key="rosterDaysDataSource" type="datasource" isList="true" required="false">
-                <caption>Roster Days</caption>
-                <description>Actual working days, leaves, and hours worked</description>
+        <propertyGroup caption="Roster Days Configuration">
+            <property key="rosterDayEntityName" type="string" required="false">
+                <caption>Roster Day Entity Name</caption>
+                <description>Full entity name (e.g., Roster.RosterDay)</description>
             </property>
-            <property key="rosterDayDateAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
-                <caption>Roster Day Date</caption>
-                <description>Date of the roster day</description>
-                <attributeTypes>
-                    <attributeType name="DateTime"/>
-                </attributeTypes>
+            <property key="rosterDayUserXPath" type="string" required="false">
+                <caption>RosterDay User XPath Pattern</caption>
+                <description>Full XPath association pattern to user (e.g., Roster.RosterDay_DriverInfo/Tenancy.DriverInfo[Tenancy.DriverInfo_TenantUser)</description>
             </property>
-            <property key="rosterDayUserRef" type="association" dataSource="rosterDaysDataSource" selectableObjects="usersDataSource" required="false">
-                <caption>Roster Day User Association</caption>
-                <description>Association path to the user (e.g., DriverInfo/TenantUser)</description>
-                <associationTypes>
-                    <associationType name="Reference"/>
-                </associationTypes>
+            <property key="rosterDayUserPath" type="string" required="false">
+                <caption>RosterDay to User Association Path</caption>
+                <description>Association path to traverse for user ID (e.g., RosterDay_DriverInfo/DriverInfo_TenantUser). Use / for multi-hop.</description>
             </property>
-            <property key="rosterDayHoursAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
-                <caption>Hours Worked</caption>
-                <description>Total hours worked on this day</description>
-                <attributeTypes>
-                    <attributeType name="Decimal"/>
-                    <attributeType name="Integer"/>
-                    <attributeType name="Long"/>
-                </attributeTypes>
+            <property key="rosterDayDateAttr" type="string" required="false">
+                <caption>Date Attribute</caption>
+                <description>Attribute name for date (e.g., Date)</description>
             </property>
-            <property key="rosterDayTypeAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
-                <caption>Day Type</caption>
-                <description>Type of day (worked, leave, sick, etc.)</description>
-                <attributeTypes>
-                    <attributeType name="String"/>
-                    <attributeType name="Enum"/>
-                </attributeTypes>
+            <property key="rosterDayHoursAttr" type="string" required="false">
+                <caption>Hours Attribute</caption>
+                <description>Attribute name for hours worked (e.g., Hours)</description>
+            </property>
+            <property key="rosterDayTypeAttr" type="string" required="false">
+                <caption>Type Attribute</caption>
+                <description>Attribute name for day type (e.g., DayType)</description>
             </property>
         </propertyGroup>
 
