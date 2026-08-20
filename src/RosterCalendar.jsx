@@ -30,7 +30,7 @@ export function RosterCalendar({
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState(defaultView);
     const [currentPage, setCurrentPage] = useState(1);
-    const [lastKnownPage, setLastKnownPage] = useState(null);
+    const [lastKnownTotalPages, setLastKnownTotalPages] = useState(null);
     const [rosterPatterns, setRosterPatterns] = useState([]);
     const [patternDays, setPatternDays] = useState([]);
     const [rosterDays, setRosterDays] = useState([]);
@@ -42,38 +42,41 @@ export function RosterCalendar({
 
     const itemsPerPage = pageSize || 10;
 
-    // Set offset and limit for pagination - request one extra to detect if there are more pages
+    // Set offset and limit for pagination, and request total count
     useMemo(() => {
         if (usersDataSource && usersDataSource.setLimit && usersDataSource.setOffset) {
-            usersDataSource.setLimit(itemsPerPage + 1);
+            usersDataSource.setLimit(itemsPerPage);
             usersDataSource.setOffset((currentPage - 1) * itemsPerPage);
+
+            // Request total count from Mendix
+            if (usersDataSource.requestTotalCount) {
+                usersDataSource.requestTotalCount(true);
+            }
         }
     }, [usersDataSource, currentPage, itemsPerPage]);
 
-    // Check if there are more pages by seeing if we got extra item
-    const hasNextPage = usersDataSource?.items?.length > itemsPerPage;
-    const hasPrevPage = currentPage > 1;
-
-    // Track the last page (when we find a page with no next page)
-    useMemo(() => {
-        if (!hasNextPage && usersDataSource?.status === "available") {
-            if (lastKnownPage === null || currentPage > lastKnownPage) {
-                setLastKnownPage(currentPage);
-            }
+    // Calculate total pages from totalCount
+    const totalPages = useMemo(() => {
+        if (usersDataSource?.totalCount != null && usersDataSource.totalCount > 0) {
+            return Math.ceil(usersDataSource.totalCount / itemsPerPage);
         }
-    }, [hasNextPage, currentPage, usersDataSource, lastKnownPage]);
+        return null;
+    }, [usersDataSource?.totalCount, itemsPerPage]);
 
-    // Calculate total pages
-    const totalPages = lastKnownPage !== null ? lastKnownPage : (hasNextPage ? null : currentPage);
+    // Pagination state
+    const hasNextPage = totalPages ? currentPage < totalPages : false;
+    const hasPrevPage = currentPage > 1;
 
     const users = useMemo(() => {
         if (!usersDataSource || usersDataSource.status !== "available") return [];
 
         console.log("📊 [RosterCalendar] Users Data Source Retrieved:");
-        console.log(`  → Total items from DB: ${usersDataSource.items.length}`);
-        console.log(`  → Page ${currentPage}, Page Size: ${itemsPerPage}`);
+        console.log(`  → Total count: ${usersDataSource.totalCount}`);
+        console.log(`  → Items retrieved: ${usersDataSource.items.length}`);
+        console.log(`  → Total pages: ${totalPages || 'calculating...'}`);
+        console.log(`  → Page ${currentPage} of ${totalPages || '?'}, Page Size: ${itemsPerPage}`);
 
-        const pageUsers = usersDataSource.items.slice(0, itemsPerPage).map(item => ({
+        const pageUsers = usersDataSource.items.map(item => ({
             id: item.id,
             name: userNameAttr?.get(item).value || "Unnamed User"
         }));
@@ -82,7 +85,7 @@ export function RosterCalendar({
         console.log(`  → User IDs:`, pageUsers.map(u => u.id));
 
         return pageUsers;
-    }, [usersDataSource, userNameAttr, itemsPerPage, currentPage]);
+    }, [usersDataSource, userNameAttr, itemsPerPage, currentPage, totalPages]);
 
     const currentPageUserIds = useMemo(() => {
         const ids = users.map(u => u.id);
@@ -553,7 +556,7 @@ export function RosterCalendar({
                     <div className="roster-calendar-pagination-info">
                         <span className="roster-calendar-page-number">{currentPage}</span>
                         <span className="roster-calendar-page-total">
-                            {totalPages !== null ? `of ${totalPages}` : 'of ?'}
+                            {totalPages ? `of ${totalPages}` : 'of ?'}
                         </span>
                     </div>
 
