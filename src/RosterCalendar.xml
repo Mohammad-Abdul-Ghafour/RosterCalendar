@@ -53,12 +53,12 @@
                     <attributeType name="DateTime"/>
                 </attributeTypes>
             </property>
-            <property key="patternUserAttr" type="attribute" dataSource="rosterPatternsDataSource" required="false">
-                <caption>Pattern User Reference</caption>
-                <description>Reference to the user entity</description>
-                <attributeTypes>
-                    <attributeType name="String"/>
-                </attributeTypes>
+            <property key="patternUserRef" type="association" dataSource="rosterPatternsDataSource" selectableObjects="usersDataSource" required="false">
+                <caption>Pattern User Association</caption>
+                <description>Association path to the user (e.g., DriverInfo/TenantUser)</description>
+                <associationTypes>
+                    <associationType name="Reference"/>
+                </associationTypes>
             </property>
 
             <property key="patternDaysDataSource" type="datasource" isList="true" required="false">
@@ -73,12 +73,12 @@
                     <attributeType name="Enum"/>
                 </attributeTypes>
             </property>
-            <property key="patternDayPatternRefAttr" type="attribute" dataSource="patternDaysDataSource" required="false">
-                <caption>Pattern Reference</caption>
-                <description>Reference to the roster pattern</description>
-                <attributeTypes>
-                    <attributeType name="String"/>
-                </attributeTypes>
+            <property key="patternDayPatternRef" type="association" dataSource="patternDaysDataSource" selectableObjects="rosterPatternsDataSource" required="false">
+                <caption>Pattern Association</caption>
+                <description>Association to the roster pattern</description>
+                <associationTypes>
+                    <associationType name="Reference"/>
+                </associationTypes>
             </property>
             <property key="patternDayAvailableAttr" type="attribute" dataSource="patternDaysDataSource" required="false">
                 <caption>Available / Status</caption>
@@ -101,12 +101,12 @@
                     <attributeType name="DateTime"/>
                 </attributeTypes>
             </property>
-            <property key="rosterDayUserAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
-                <caption>Roster Day User Reference</caption>
-                <description>Reference to the user entity</description>
-                <attributeTypes>
-                    <attributeType name="String"/>
-                </attributeTypes>
+            <property key="rosterDayUserRef" type="association" dataSource="rosterDaysDataSource" selectableObjects="usersDataSource" required="false">
+                <caption>Roster Day User Association</caption>
+                <description>Association path to the user (e.g., DriverInfo/TenantUser)</description>
+                <associationTypes>
+                    <associationType name="Reference"/>
+                </associationTypes>
             </property>
             <property key="rosterDayHoursAttr" type="attribute" dataSource="rosterDaysDataSource" required="false">
                 <caption>Hours Worked</caption>

@@ -10,14 +10,14 @@ export function RosterCalendar({
     rosterPatternsDataSource,
     patternStartDateAttr,
     patternEndDateAttr,
-    patternUserAttr,
+    patternUserRef,
     patternDaysDataSource,
     patternDayOfWeekAttr,
-    patternDayPatternRefAttr,
+    patternDayPatternRef,
     patternDayAvailableAttr,
     rosterDaysDataSource,
     rosterDayDateAttr,
-    rosterDayUserAttr,
+    rosterDayUserRef,
     rosterDayHoursAttr,
     rosterDayTypeAttr,
     onCellClick,
@@ -40,39 +40,68 @@ export function RosterCalendar({
 
     const rosterPatterns = useMemo(() => {
         if (!rosterPatternsDataSource || rosterPatternsDataSource.status !== "available") return [];
-        return rosterPatternsDataSource.items.map(item => ({
-            id: item.id,
-            userId: patternUserAttr?.get(item).value,
-            startDate: patternStartDateAttr?.get(item).value,
-            endDate: patternEndDateAttr?.get(item).value
-        }));
-    }, [rosterPatternsDataSource, patternUserAttr, patternStartDateAttr, patternEndDateAttr]);
+        return rosterPatternsDataSource.items.map(item => {
+            // Get user object from association and extract ID
+            const userObj = patternUserRef?.get(item).value;
+            const userId = userObj?.id || null;
+
+            return {
+                id: item.id,
+                userId,
+                startDate: patternStartDateAttr?.get(item).value,
+                endDate: patternEndDateAttr?.get(item).value
+            };
+        });
+    }, [rosterPatternsDataSource, patternUserRef, patternStartDateAttr, patternEndDateAttr]);
 
     const patternDays = useMemo(() => {
         if (!patternDaysDataSource || patternDaysDataSource.status !== "available") return [];
         return patternDaysDataSource.items.map(item => {
-            const dayOfWeek = patternDayOfWeekAttr?.get(item).value;
-            const available = patternDayAvailableAttr?.get(item).value;
+            // Convert day of week to primitive
+            const dayOfWeekValue = patternDayOfWeekAttr?.get(item).value;
+            const dayOfWeek = normalizeDayOfWeek(dayOfWeekValue);
+
+            // Convert available to boolean
+            const availableValue = patternDayAvailableAttr?.get(item).value;
+            const available = normalizeAvailability(availableValue);
+
+            // Get pattern object from association and extract ID
+            const patternObj = patternDayPatternRef?.get(item).value;
+            const patternId = patternObj?.id || null;
 
             return {
                 id: item.id,
-                patternId: patternDayPatternRefAttr?.get(item).value,
-                dayOfWeek: normalizeDayOfWeek(dayOfWeek),
-                available: normalizeAvailability(available)
+                patternId,
+                dayOfWeek,
+                available
             };
         });
-    }, [patternDaysDataSource, patternDayPatternRefAttr, patternDayOfWeekAttr, patternDayAvailableAttr]);
+    }, [patternDaysDataSource, patternDayPatternRef, patternDayOfWeekAttr, patternDayAvailableAttr]);
 
     const rosterDays = useMemo(() => {
         if (!rosterDaysDataSource || rosterDaysDataSource.status !== "available") return [];
-        return rosterDaysDataSource.items.map(item => ({
-            id: item.id,
-            userId: rosterDayUserAttr?.get(item).value,
-            date: rosterDayDateAttr?.get(item).value,
-            hours: rosterDayHoursAttr?.get(item).value,
-            type: rosterDayTypeAttr?.get(item).value
-        }));
-    }, [rosterDaysDataSource, rosterDayUserAttr, rosterDayDateAttr, rosterDayHoursAttr, rosterDayTypeAttr]);
+        return rosterDaysDataSource.items.map(item => {
+            // Get user object from association and extract ID
+            const userObj = rosterDayUserRef?.get(item).value;
+            const userId = userObj?.id || null;
+
+            // Convert hours to number (handle BigNumber or other objects)
+            const hoursValue = rosterDayHoursAttr?.get(item).value;
+            const hours = hoursValue != null ? Number(hoursValue) : null;
+
+            // Convert type to string
+            const typeValue = rosterDayTypeAttr?.get(item).value;
+            const type = typeValue != null ? String(typeValue) : null;
+
+            return {
+                id: item.id,
+                userId,
+                date: rosterDayDateAttr?.get(item).value,
+                hours,
+                type
+            };
+        });
+    }, [rosterDaysDataSource, rosterDayUserRef, rosterDayDateAttr, rosterDayHoursAttr, rosterDayTypeAttr]);
 
     const calendarData = useMemo(() => {
         return buildCalendarData(users, dateRange, rosterPatterns, patternDays, rosterDays);
@@ -178,13 +207,20 @@ export function RosterCalendar({
 
 function CellContent({ cell }) {
     if (cell.hasActual) {
+        // Ensure type is a string
+        const typeStr = String(cell.actualType || "work").toLowerCase();
+        const typeLabel = String(cell.actualType || "Work");
+
+        // Ensure hours is a number
+        const hoursNum = Number(cell.hours);
+
         return (
             <div className="roster-calendar-cell-content">
-                <div className={`roster-calendar-cell-type type-${cell.actualType || "work"}`}>
-                    {cell.actualType || "Work"}
+                <div className={`roster-calendar-cell-type type-${typeStr}`}>
+                    {typeLabel}
                 </div>
-                {cell.hours !== null && cell.hours !== undefined && (
-                    <div className="roster-calendar-cell-hours">{cell.hours}h</div>
+                {!isNaN(hoursNum) && (
+                    <div className="roster-calendar-cell-hours">{hoursNum}h</div>
                 )}
             </div>
         );
