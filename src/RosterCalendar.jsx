@@ -35,7 +35,6 @@ export function RosterCalendar({
     const [rosterPatterns, setRosterPatterns] = useState([]);
     const [patternDays, setPatternDays] = useState([]);
     const [rosterDays, setRosterDays] = useState([]);
-    const [loading, setLoading] = useState(false);
 
     const dateRange = useMemo(() => {
         return generateDateRange(currentDate, viewMode, showWeekends);
@@ -111,8 +110,6 @@ export function RosterCalendar({
             return;
         }
 
-        setLoading(true);
-
         const startDate = dateRange[0];
         const endDate = dateRange[dateRange.length - 1];
         const startDateStr = formatDateForXPath(startDate);
@@ -148,8 +145,6 @@ export function RosterCalendar({
         } else {
             setRosterDays([]);
         }
-
-        setLoading(false);
     }, [currentPageUserIds, dateRange, patternEntityName, rosterDayEntityName]);
 
     // Fetch Pattern Days when patterns change
@@ -238,14 +233,7 @@ export function RosterCalendar({
     }
 
     function fetchRosterPatterns(entityName, userXPathPattern, userPath, userIds, startDate, endDate, startAttr, endAttr) {
-        // User provides pattern like: "Roster.RosterPattern_DriverInfo/Tenancy.DriverInfo[Tenancy.DriverInfo_TenantUser"
-        // We complete it with: " = guid1 or Tenancy.DriverInfo_TenantUser = guid2]]"
-
-        // Build user ID conditions
-        const lastPart = userXPathPattern.substring(userXPathPattern.lastIndexOf('[') + 1); // Gets "Tenancy.DriverInfo_TenantUser"
-        const userConditions = userIds.map(id => `${lastPart} = ${id}`).join(' or ');
-
-        // Complete the XPath
+        const lastPart = userXPathPattern.substring(userXPathPattern.lastIndexOf('[') + 1);
         const userConstraint = `[${userXPathPattern} = ${userIds[0]}` +
             (userIds.length > 1 ? ` or ${userIds.slice(1).map(id => `${lastPart} = ${id}`).join(' or ')}` : '') +
             ']]';
@@ -325,12 +313,7 @@ export function RosterCalendar({
     }
 
     function fetchRosterDays(entityName, userXPathPattern, userPath, userIds, startDate, endDate, dateAttr) {
-        // User provides pattern like: "Roster.RosterDay_DriverInfo/Tenancy.DriverInfo[Tenancy.DriverInfo_TenantUser"
-        // We complete it with user IDs and date filters
-
         const lastPart = userXPathPattern.substring(userXPathPattern.lastIndexOf('[') + 1);
-        const userConditions = userIds.map(id => `${lastPart} = ${id}`).join(' or ');
-
         const userConstraint = `[${userXPathPattern} = ${userIds[0]}` +
             (userIds.length > 1 ? ` or ${userIds.slice(1).map(id => `${lastPart} = ${id}`).join(' or ')}` : '') +
             ']]';
@@ -399,7 +382,7 @@ export function RosterCalendar({
         setCurrentDate(newDate);
     };
 
-    const handleCellClick = (user, date, cellData) => {
+    const handleCellClick = () => {
         if (onCellClick && onCellClick.canExecute) {
             onCellClick.execute();
         }
@@ -417,10 +400,6 @@ export function RosterCalendar({
 
     if (!usersDataSource || usersDataSource.status === "loading") {
         return <div className="roster-calendar-loading">Loading users...</div>;
-    }
-
-    if (loading) {
-        return <div className="roster-calendar-loading">Loading roster data...</div>;
     }
 
     const containerStyle = heightType === "auto" ? {} : { height };
