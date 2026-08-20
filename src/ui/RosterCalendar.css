@@ -206,6 +206,27 @@
     opacity: 0.7;
 }
 
+/* Full-cell background colors based on status */
+.roster-calendar-day-cell.cell-available {
+    background-color: #d3f9d8 !important;
+}
+
+.roster-calendar-day-cell.cell-off {
+    background-color: #e9ecef !important;
+}
+
+.roster-calendar-day-cell.cell-worked {
+    background-color: #51cf66 !important;
+}
+
+.roster-calendar-day-cell.cell-leave {
+    background-color: #ffe3e3 !important;
+}
+
+.roster-calendar-day-cell.cell-sick {
+    background-color: #fff3bf !important;
+}
+
 .roster-calendar-cell-content {
     display: flex;
     flex-direction: column;
@@ -248,6 +269,13 @@
 .roster-calendar-cell-type.type-off {
     background-color: #f1f3f5;
     color: #495057;
+}
+
+.roster-calendar-cell-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #212529;
+    text-transform: capitalize;
 }
 
 .roster-calendar-cell-hours {

@@ -573,16 +573,13 @@ export function RosterCalendar({
 
 function CellContent({ cell }) {
     if (cell.hasActual) {
-        const typeStr = String(cell.actualType || "work").toLowerCase();
         const typeLabel = String(cell.actualType || "Work");
         const hoursNum = Number(cell.hours);
 
         return (
             <div className="roster-calendar-cell-content">
-                <div className={`roster-calendar-cell-type type-${typeStr}`}>
-                    {typeLabel}
-                </div>
-                {!isNaN(hoursNum) && (
+                <div className="roster-calendar-cell-label">{typeLabel}</div>
+                {!isNaN(hoursNum) && hoursNum > 0 && (
                     <div className="roster-calendar-cell-hours">{hoursNum}h</div>
                 )}
             </div>
@@ -592,11 +589,7 @@ function CellContent({ cell }) {
     if (cell.hasPattern) {
         return (
             <div className="roster-calendar-cell-content">
-                <div
-                    className={`roster-calendar-cell-type type-${
-                        cell.patternAvailable ? "available" : "off"
-                    }`}
-                >
+                <div className="roster-calendar-cell-label">
                     {cell.patternAvailable ? "Available" : "Off"}
                 </div>
             </div>
