@@ -1,15 +1,28 @@
 import classNames from "classnames";
+import { extractTime } from "../utils/dateUtils";
+
+// Helper to extract numeric value from Mendix Big objects
+function extractNumber(value) {
+    if (value == null) return null;
+    if (typeof value === "number") return value;
+    if (typeof value === "object" && value.value !== undefined) return Number(value.value);
+    return Number(value);
+}
 
 export function CalendarCell({ cell, onClick }) {
     let cellColorClass = "";
+
     if (cell.hasActual) {
-        const typeStr = String(cell.actualType || "work").toLowerCase();
-        if (typeStr === "worked" || typeStr === "work") {
-            cellColorClass = "cell-worked";
-        } else if (typeStr === "leave") {
-            cellColorClass = "cell-leave";
-        } else if (typeStr === "sick") {
-            cellColorClass = "cell-sick";
+        const typeStr = String(cell.actualType || "").toLowerCase();
+
+        if (cell.isPartTime) {
+            // Part-time sick or leave: show as available (green)
+            cellColorClass = "cell-available";
+        } else {
+            // Full-time sick or leave: show as off (grey)
+            if (typeStr === "sick" || typeStr === "leave") {
+                cellColorClass = "cell-off";
+            }
         }
     } else if (cell.hasPattern) {
         cellColorClass = cell.patternAvailable ? "cell-available" : "cell-off";
@@ -29,25 +42,71 @@ export function CalendarCell({ cell, onClick }) {
 
 function CellContent({ cell }) {
     if (cell.hasActual) {
-        const typeLabel = String(cell.actualType || "Work");
-        const hoursNum = Number(cell.hours);
+        const typeStr = String(cell.actualType || "").toLowerCase();
 
-        return (
-            <div className="roster-calendar-cell-content">
-                <div className="roster-calendar-cell-label">{typeLabel}</div>
-                {!isNaN(hoursNum) && hoursNum > 0 && (
-                    <div className="roster-calendar-cell-hours">{hoursNum}h</div>
-                )}
-            </div>
-        );
+        if (cell.isPartTime) {
+            // Part-time: show available with working hours and badge
+            const workingHours = extractNumber(cell.workingHours);
+            const startTime = extractTime(cell.workStartTime);
+            const endTime = extractTime(cell.workEndTime);
+
+            return (
+                <div className="roster-calendar-cell-content">
+                    <div className="roster-calendar-cell-label">Available</div>
+                    {workingHours != null && !isNaN(workingHours) && (
+                        <div className="roster-calendar-cell-hours">{workingHours}h</div>
+                    )}
+                    {startTime && endTime && (
+                        <div className="roster-calendar-cell-time">
+                            {startTime} - {endTime}
+                        </div>
+                    )}
+                    {typeStr && (
+                        <div className={classNames("roster-calendar-cell-badge", {
+                            "badge-sick": typeStr === "sick",
+                            "badge-leave": typeStr === "leave"
+                        })}>
+                            {typeStr === "sick" ? "Sick" : "Leave"}
+                        </div>
+                    )}
+                </div>
+            );
+        } else {
+            // Full-time sick or leave: show "Off" label and badge
+            return (
+                <div className="roster-calendar-cell-content">
+                    <div className="roster-calendar-cell-label">Off</div>
+                    {typeStr && (
+                        <div className={classNames("roster-calendar-cell-badge", {
+                            "badge-sick": typeStr === "sick",
+                            "badge-leave": typeStr === "leave"
+                        })}>
+                            {typeStr === "sick" ? "Sick" : "Leave"}
+                        </div>
+                    )}
+                </div>
+            );
+        }
     }
 
     if (cell.hasPattern) {
+        const patternHours = extractNumber(cell.patternWorkingHours);
+        const startTime = extractTime(cell.patternStartTime);
+        const endTime = extractTime(cell.patternEndTime);
+
         return (
             <div className="roster-calendar-cell-content">
                 <div className="roster-calendar-cell-label">
                     {cell.patternAvailable ? "Available" : "Off"}
                 </div>
+                {cell.patternAvailable && patternHours != null && !isNaN(patternHours) && (
+                    <div className="roster-calendar-cell-hours">{patternHours}h</div>
+                )}
+                {cell.patternAvailable && startTime && endTime && (
+                    <div className="roster-calendar-cell-time">
+                        {startTime} - {endTime}
+                    </div>
+                )}
             </div>
         );
     }

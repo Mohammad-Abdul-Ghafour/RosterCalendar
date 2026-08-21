@@ -15,12 +15,21 @@ export function useRosterData(
     patternDayPatternAssociation,
     patternDayOfWeekAttr,
     patternDayAvailableAttr,
+    patternDayWorkingHoursAttr,
+    patternDayStartTimeAttr,
+    patternDayEndTimeAttr,
     rosterDayEntityName,
     rosterDayUserXPath,
     rosterDayUserPath,
     rosterDayDateAttr,
-    rosterDayHoursAttr,
-    rosterDayTypeAttr
+    rosterDayTypeAttr,
+    rosterDayOffStartTimeAttr,
+    rosterDayOffEndTimeAttr,
+    rosterDayOffHoursAttr,
+    rosterDayIsPartTimeAttr,
+    rosterDayWorkingHoursAttr,
+    rosterDayWorkStartTimeAttr,
+    rosterDayWorkEndTimeAttr
 ) {
     const [rosterPatterns, setRosterPatterns] = useState([]);
     const [patternDays, setPatternDays] = useState([]);
@@ -62,8 +71,14 @@ export function useRosterData(
                 startDateStr,
                 endDateStr,
                 rosterDayDateAttr,
-                rosterDayHoursAttr,
                 rosterDayTypeAttr,
+                rosterDayOffStartTimeAttr,
+                rosterDayOffEndTimeAttr,
+                rosterDayOffHoursAttr,
+                rosterDayIsPartTimeAttr,
+                rosterDayWorkingHoursAttr,
+                rosterDayWorkStartTimeAttr,
+                rosterDayWorkEndTimeAttr,
                 setRosterDays
             );
         } else {
@@ -83,6 +98,9 @@ export function useRosterData(
             rosterPatterns.map(p => p.id),
             patternDayOfWeekAttr,
             patternDayAvailableAttr,
+            patternDayWorkingHoursAttr,
+            patternDayStartTimeAttr,
+            patternDayEndTimeAttr,
             setPatternDays
         );
     }, [rosterPatterns, patternDayEntityName]);
@@ -132,7 +150,7 @@ function fetchRosterPatterns(entityName, userXPathPattern, userPath, userIds, st
     });
 }
 
-function fetchPatternDays(entityName, associationPath, patternIds, dayOfWeekAttr, availableAttr, setData) {
+function fetchPatternDays(entityName, associationPath, patternIds, dayOfWeekAttr, availableAttr, workingHoursAttr, startTimeAttr, endTimeAttr, setData) {
     if (patternIds.length === 0) {
         setData([]);
         return;
@@ -153,7 +171,10 @@ function fetchPatternDays(entityName, associationPath, patternIds, dayOfWeekAttr
                     id: obj.getGuid(),
                     patternId: patternId,
                     dayOfWeek: normalizeDayOfWeek(obj.get(dayOfWeekAttr || 'DayOfWeek')),
-                    available: normalizeAvailability(obj.get(availableAttr || 'Available'))
+                    available: normalizeAvailability(obj.get(availableAttr || 'Available')),
+                    workingHours: workingHoursAttr ? obj.get(workingHoursAttr) : null,
+                    startTime: startTimeAttr ? obj.get(startTimeAttr) : null,
+                    endTime: endTimeAttr ? obj.get(endTimeAttr) : null
                 };
             });
 
@@ -165,7 +186,7 @@ function fetchPatternDays(entityName, associationPath, patternIds, dayOfWeekAttr
     });
 }
 
-function fetchRosterDays(entityName, userXPathPattern, userPath, userIds, startDate, endDate, dateAttr, hoursAttr, typeAttr, setData) {
+function fetchRosterDays(entityName, userXPathPattern, userPath, userIds, startDate, endDate, dateAttr, typeAttr, offStartTimeAttr, offEndTimeAttr, offHoursAttr, isPartTimeAttr, workingHoursAttr, workStartTimeAttr, workEndTimeAttr, setData) {
     const lastPart = userXPathPattern.substring(userXPathPattern.lastIndexOf('[') + 1);
     const userConstraint = `[${userXPathPattern} = ${userIds[0]}` +
         (userIds.length > 1 ? ` or ${userIds.slice(1).map(id => `${lastPart} = ${id}`).join(' or ')}` : '') +
@@ -191,10 +212,17 @@ function fetchRosterDays(entityName, userXPathPattern, userPath, userIds, startD
                         id: obj.getGuid(),
                         userId: userId,
                         date: obj.get(dateAttr || 'Date'),
-                        hours: obj.get(hoursAttr || 'Hours') != null ?
-                            Number(obj.get(hoursAttr || 'Hours')) : null,
                         type: obj.get(typeAttr || 'DayType') != null ?
-                            String(obj.get(typeAttr || 'DayType')) : null
+                            String(obj.get(typeAttr || 'DayType')) : null,
+                        offStartTime: offStartTimeAttr ? obj.get(offStartTimeAttr) : null,
+                        offEndTime: offEndTimeAttr ? obj.get(offEndTimeAttr) : null,
+                        offHours: offHoursAttr && obj.get(offHoursAttr) != null ?
+                            Number(obj.get(offHoursAttr)) : null,
+                        isPartTime: isPartTimeAttr ? Boolean(obj.get(isPartTimeAttr)) : false,
+                        workingHours: workingHoursAttr && obj.get(workingHoursAttr) != null ?
+                            Number(obj.get(workingHoursAttr)) : null,
+                        workStartTime: workStartTimeAttr ? obj.get(workStartTimeAttr) : null,
+                        workEndTime: workEndTimeAttr ? obj.get(workEndTimeAttr) : null
                     });
 
                     processed++;

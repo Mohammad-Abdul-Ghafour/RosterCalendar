@@ -45,13 +45,29 @@ The widget uses a hierarchical data model with three optional layers:
 
 2. **RosterPattern + PatternDay (Optional)** - Weekly schedule pattern
    - RosterPattern: Defines time period (start/end dates) for a user
-   - PatternDay: 7 records per pattern (Mon-Sun) with day-of-week and availability status
+   - PatternDay: 7 records per pattern (Mon-Sun) with:
+     - Day of week (0-6, Sunday-Saturday)
+     - Availability status (Available/Unavailable)
+     - Working hours (decimal)
+     - Start time (datetime - only time portion displayed)
+     - End time (datetime - only time portion displayed)
    - Pattern repeats weekly throughout the pattern period
+   - Display: Shows "Available" with working hours and time range for available days
 
-3. **RosterDay (Optional)** - Actual roster data
-   - Specific date entries with hours worked and day type
-   - Overrides pattern data for that specific date
-   - Used for leaves, actual worked hours, exceptions
+3. **RosterDay (Optional)** - Actual roster data for sick/leave days
+   - Specific date entries that override pattern data
+   - Day type: "Sick" or "Leave"
+   - IsPartTime: Boolean flag indicating if this is a part-time absence
+   
+   **Full-time absence (IsPartTime = false):**
+   - OffStartTime, OffEndTime, OffHours attributes (for tracking)
+   - Display: Grey background with yellow "Sick" badge or red "Leave" badge
+   
+   **Part-time absence (IsPartTime = true):**
+   - WorkingHours: Hours available to work
+   - WorkStartTime, WorkEndTime: When the person is available
+   - OffStartTime, OffEndTime, OffHours: When they're absent
+   - Display: Green "Available" background with working hours, time range, and yellow "Sick" or red "Leave" badge
 
 ### Widget Configuration
 The widget is defined in `RosterCalendar.xml`:

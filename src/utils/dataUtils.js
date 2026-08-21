@@ -76,6 +76,9 @@ export function buildCalendarData(users, dateRange, rosterPatterns, patternDays,
             // Priority 2: Check for pattern-based schedule
             let patternDay = null;
             let patternAvailable = false;
+            let patternWorkingHours = null;
+            let patternStartTime = null;
+            let patternEndTime = null;
 
             for (const pattern of userPatterns) {
                 const patternStart = new Date(pattern.startDate);
@@ -89,6 +92,9 @@ export function buildCalendarData(users, dateRange, rosterPatterns, patternDays,
                     );
                     if (patternDay) {
                         patternAvailable = patternDay.available;
+                        patternWorkingHours = patternDay.workingHours;
+                        patternStartTime = patternDay.startTime;
+                        patternEndTime = patternDay.endTime;
                         break;
                     }
                 }
@@ -102,9 +108,18 @@ export function buildCalendarData(users, dateRange, rosterPatterns, patternDays,
                 isToday,
                 hasActual: !!actualDay,
                 actualType: actualDay?.type || null,
-                hours: actualDay?.hours || null,
+                isPartTime: actualDay?.isPartTime || false,
+                workingHours: actualDay?.workingHours || null,
+                workStartTime: actualDay?.workStartTime || null,
+                workEndTime: actualDay?.workEndTime || null,
+                offHours: actualDay?.offHours || null,
+                offStartTime: actualDay?.offStartTime || null,
+                offEndTime: actualDay?.offEndTime || null,
                 hasPattern: !!patternDay,
-                patternAvailable
+                patternAvailable,
+                patternWorkingHours,
+                patternStartTime,
+                patternEndTime
             };
         });
 

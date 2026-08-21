@@ -72,3 +72,27 @@ export function formatDateKey(date) {
     const d = date instanceof Date ? date : new Date(date);
     return d.toISOString().split('T')[0];
 }
+
+export function extractTime(datetime) {
+    if (!datetime) return "";
+
+    // Handle Mendix wrapped values
+    let actualValue = datetime;
+    if (typeof datetime === "object" && datetime !== null) {
+        if (datetime.value !== undefined) {
+            actualValue = datetime.value;
+        } else if (datetime.toString && typeof datetime.toString === 'function') {
+            // Try to convert to string first for Mendix Big objects
+            actualValue = datetime.toString();
+        }
+    }
+
+    if (!actualValue) return "";
+
+    const d = actualValue instanceof Date ? actualValue : new Date(actualValue);
+    if (isNaN(d.getTime())) return "";
+
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}

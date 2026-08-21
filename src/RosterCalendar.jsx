@@ -26,12 +26,21 @@ export function RosterCalendar({
     patternDayPatternAssociation,
     patternDayOfWeekAttr,
     patternDayAvailableAttr,
+    patternDayWorkingHoursAttr,
+    patternDayStartTimeAttr,
+    patternDayEndTimeAttr,
     rosterDayEntityName,
     rosterDayUserXPath,
     rosterDayUserPath,
     rosterDayDateAttr,
-    rosterDayHoursAttr,
     rosterDayTypeAttr,
+    rosterDayOffStartTimeAttr,
+    rosterDayOffEndTimeAttr,
+    rosterDayOffHoursAttr,
+    rosterDayIsPartTimeAttr,
+    rosterDayWorkingHoursAttr,
+    rosterDayWorkStartTimeAttr,
+    rosterDayWorkEndTimeAttr,
     onCellClick
 }) {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -83,12 +92,21 @@ export function RosterCalendar({
         patternDayPatternAssociation,
         patternDayOfWeekAttr,
         patternDayAvailableAttr,
+        patternDayWorkingHoursAttr,
+        patternDayStartTimeAttr,
+        patternDayEndTimeAttr,
         rosterDayEntityName,
         rosterDayUserXPath,
         rosterDayUserPath,
         rosterDayDateAttr,
-        rosterDayHoursAttr,
-        rosterDayTypeAttr
+        rosterDayTypeAttr,
+        rosterDayOffStartTimeAttr,
+        rosterDayOffEndTimeAttr,
+        rosterDayOffHoursAttr,
+        rosterDayIsPartTimeAttr,
+        rosterDayWorkingHoursAttr,
+        rosterDayWorkStartTimeAttr,
+        rosterDayWorkEndTimeAttr
     );
 
     // Build calendar data

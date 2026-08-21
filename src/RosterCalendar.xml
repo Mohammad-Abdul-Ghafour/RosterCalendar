@@ -80,6 +80,18 @@
                 <caption>Available</caption>
                 <description>Attribute name for availability status (e.g., Status)</description>
             </property>
+            <property key="patternDayWorkingHoursAttr" type="string" required="false">
+                <caption>Working Hours</caption>
+                <description>Attribute name for default working hours (e.g., WorkingHours)</description>
+            </property>
+            <property key="patternDayStartTimeAttr" type="string" required="false">
+                <caption>Start Time</caption>
+                <description>Attribute name for start time (e.g., StartTime) - time will be extracted from datetime</description>
+            </property>
+            <property key="patternDayEndTimeAttr" type="string" required="false">
+                <caption>End Time</caption>
+                <description>Attribute name for end time (e.g., EndTime) - time will be extracted from datetime</description>
+            </property>
         </propertyGroup>
 
         <propertyGroup caption="Roster Days Configuration">
@@ -99,13 +111,37 @@
                 <caption>Date</caption>
                 <description>Attribute name for date (e.g., Date)</description>
             </property>
-            <property key="rosterDayHoursAttr" type="string" required="false">
-                <caption>Hours</caption>
-                <description>Attribute name for hours worked (e.g., Hours)</description>
-            </property>
             <property key="rosterDayTypeAttr" type="string" required="false">
                 <caption>Type</caption>
-                <description>Attribute name for day type (e.g., RosterType)</description>
+                <description>Attribute name for day type - Sick or Leave (e.g., DayType)</description>
+            </property>
+            <property key="rosterDayOffStartTimeAttr" type="string" required="false">
+                <caption>Off Start Time</caption>
+                <description>Attribute name for off start time (e.g., OffStartTime)</description>
+            </property>
+            <property key="rosterDayOffEndTimeAttr" type="string" required="false">
+                <caption>Off End Time</caption>
+                <description>Attribute name for off end time (e.g., OffEndTime)</description>
+            </property>
+            <property key="rosterDayOffHoursAttr" type="string" required="false">
+                <caption>Off Hours</caption>
+                <description>Attribute name for off hours (e.g., OffHours)</description>
+            </property>
+            <property key="rosterDayIsPartTimeAttr" type="string" required="false">
+                <caption>Is Part Time</caption>
+                <description>Attribute name for part-time flag (e.g., IsPartTime)</description>
+            </property>
+            <property key="rosterDayWorkingHoursAttr" type="string" required="false">
+                <caption>Working Hours</caption>
+                <description>Attribute name for working hours when part-time (e.g., WorkingHours)</description>
+            </property>
+            <property key="rosterDayWorkStartTimeAttr" type="string" required="false">
+                <caption>Work Start Time</caption>
+                <description>Attribute name for work start time when part-time (e.g., WorkStartTime)</description>
+            </property>
+            <property key="rosterDayWorkEndTimeAttr" type="string" required="false">
+                <caption>Work End Time</caption>
+                <description>Attribute name for work end time when part-time (e.g., WorkEndTime)</description>
             </property>
         </propertyGroup>
 
