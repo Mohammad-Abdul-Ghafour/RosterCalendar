@@ -55,19 +55,11 @@ export function normalizeAvailability(value) {
 }
 
 export function buildCalendarData(users, dateRange, rosterPatterns, patternDays, rosterDays) {
-    console.log("[buildCalendarData] Starting with:", {
-        users: users.length,
-        patterns: rosterPatterns.length,
-        patternDays: patternDays.length,
-        rosterDays: rosterDays.length
-    });
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     return users.map(user => {
         const userPatterns = rosterPatterns.filter(p => p.userId === user.id);
-        console.log(`[buildCalendarData] User ${user.id} has ${userPatterns.length} patterns`);
 
         const days = dateRange.map(date => {
             const dateKey = formatDateKey(date);
@@ -92,23 +84,12 @@ export function buildCalendarData(users, dateRange, rosterPatterns, patternDays,
                 patternEnd.setHours(0, 0, 0, 0);
 
                 if (date >= patternStart && date <= patternEnd) {
-                    const matchingPatternDays = patternDays.filter(pd => pd.patternId === pattern.id);
-                    console.log(`[buildCalendarData] Date ${dateKey}, dayOfWeek ${dayOfWeek}:`, {
-                        patternId: pattern.id,
-                        matchingPatternDays,
-                        lookingForDayOfWeek: dayOfWeek
-                    });
-
                     patternDay = patternDays.find(
                         pd => pd.patternId === pattern.id && pd.dayOfWeek === dayOfWeek
                     );
-
                     if (patternDay) {
-                        console.log(`[buildCalendarData] FOUND pattern day:`, patternDay);
                         patternAvailable = patternDay.available;
                         break;
-                    } else {
-                        console.log(`[buildCalendarData] NO MATCH for dayOfWeek ${dayOfWeek}`);
                     }
                 }
             }

@@ -146,36 +146,17 @@ function fetchPatternDays(entityName, associationPath, patternIds, dayOfWeekAttr
     window.mx.data.get({
         xpath: xpath,
         callback: function(objs) {
-            console.log("[PatternDays] Fetched count:", objs.length);
-            console.log("[PatternDays] Attributes:", {
-                dayOfWeekAttr: dayOfWeekAttr || 'DayOfWeek',
-                availableAttr: availableAttr || 'Available'
-            });
-
             const days = objs.map(obj => {
                 const patternId = obj.get(fullAssocName);
-                const rawDayOfWeek = obj.get(dayOfWeekAttr || 'DayOfWeek');
-                const rawAvailable = obj.get(availableAttr || 'Available');
-                const normalizedDayOfWeek = normalizeDayOfWeek(rawDayOfWeek);
-                const normalizedAvailable = normalizeAvailability(rawAvailable);
-
-                console.log("[PatternDays] Item:", {
-                    patternId,
-                    rawDayOfWeek,
-                    normalizedDayOfWeek,
-                    rawAvailable,
-                    normalizedAvailable
-                });
 
                 return {
                     id: obj.getGuid(),
                     patternId: patternId,
-                    dayOfWeek: normalizedDayOfWeek,
-                    available: normalizedAvailable
+                    dayOfWeek: normalizeDayOfWeek(obj.get(dayOfWeekAttr || 'DayOfWeek')),
+                    available: normalizeAvailability(obj.get(availableAttr || 'Available'))
                 };
             });
 
-            console.log("[PatternDays] Final array:", days);
             setData(days);
         },
         error: function() {
