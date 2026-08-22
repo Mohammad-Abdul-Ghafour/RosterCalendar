@@ -9,7 +9,7 @@ function extractNumber(value) {
     return Number(value);
 }
 
-export function CalendarCell({ cell, onClick }) {
+export function CalendarCell({ cell, userItem, onClick }) {
     let cellColorClass = "";
 
     if (cell.hasActual) {
@@ -31,12 +31,18 @@ export function CalendarCell({ cell, onClick }) {
         cellColorClass = cell.patternAvailable ? "cell-available" : "cell-off";
     }
 
+    const handleClick = () => {
+        if (onClick && userItem && cell.date) {
+            onClick(userItem, cell.date);
+        }
+    };
+
     return (
         <td
             className={classNames("roster-calendar-day-cell", cellColorClass, {
                 "is-today": cell.isToday
             })}
-            onClick={onClick}
+            onClick={handleClick}
         >
             <CellContent cell={cell} />
         </td>

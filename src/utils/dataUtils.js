@@ -126,6 +126,7 @@ export function buildCalendarData(users, dateRange, rosterPatterns, patternDays,
         return {
             userId: user.id,
             userName: user.name,
+            userItem: user.item,
             days
         };
     });

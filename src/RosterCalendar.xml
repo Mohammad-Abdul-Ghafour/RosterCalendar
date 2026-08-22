@@ -145,10 +145,29 @@
             </property>
         </propertyGroup>
 
+        <propertyGroup caption="Click Context (Optional)">
+            <property key="clickDate" type="attribute" required="false">
+                <caption>Click Date Variable</caption>
+                <description>Optional DateTime or String variable to store the clicked date (can be a page variable)</description>
+                <attributeTypes>
+                    <attributeType name="DateTime"/>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+            <property key="clickDayName" type="attribute" required="false">
+                <caption>Click Day Name Variable</caption>
+                <description>Optional Enum or String variable to store the clicked day name, e.g., "Monday" (can be a page variable)</description>
+                <attributeTypes>
+                    <attributeType name="Enum"/>
+                    <attributeType name="String"/>
+                </attributeTypes>
+            </property>
+        </propertyGroup>
+
         <propertyGroup caption="Actions">
-            <property key="onCellClick" type="action" required="false">
+            <property key="onCellClick" type="action" dataSource="usersDataSource" required="false">
                 <caption>On Cell Click</caption>
-                <description>Action triggered when a calendar cell is clicked</description>
+                <description>Action triggered when a calendar cell is clicked. Receives the clicked user object as context.</description>
             </property>
         </propertyGroup>
 

@@ -27,6 +27,7 @@ export function CalendarTable({ calendarData, dateRange, onCellClick, formatDayN
                                 <CalendarCell
                                     key={idx}
                                     cell={dayCell}
+                                    userItem={userRow.userItem}
                                     onClick={onCellClick}
                                 />
                             ))}

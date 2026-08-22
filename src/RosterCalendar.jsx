@@ -41,6 +41,8 @@ export function RosterCalendar({
     rosterDayWorkingHoursAttr,
     rosterDayWorkStartTimeAttr,
     rosterDayWorkEndTimeAttr,
+    clickDate,
+    clickDayName,
     onCellClick
 }) {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -71,7 +73,8 @@ export function RosterCalendar({
 
         return usersDataSource.items.map(item => ({
             id: item.id,
-            name: userNameAttr?.get(item).value || "Unnamed User"
+            name: userNameAttr?.get(item).value || "Unnamed User",
+            item: item // Keep reference to the Mendix object for click action
         }));
     }, [usersDataSource, userNameAttr]);
 
@@ -139,9 +142,40 @@ export function RosterCalendar({
         setViewMode(viewMode === "week" ? "month" : "week");
     };
 
-    const handleCellClick = () => {
-        if (onCellClick && onCellClick.canExecute) {
-            onCellClick.execute();
+    const handleCellClick = (userItem, date) => {
+        // Update optional page variables if configured
+        if (clickDate && clickDate.status === "available") {
+            clickDate.setValue(date);
+        }
+
+        if (clickDayName && clickDayName.status === "available") {
+            const dayNameLong = date.toLocaleDateString("en-US", { weekday: "long" });
+            const dayNameShort = date.toLocaleDateString("en-US", { weekday: "short" });
+
+            // For enum attributes, we need to check if the value is in the universe (list of valid enum values)
+            const universe = clickDayName.universe;
+            if (universe && universe.length > 0) {
+                // It's an enum - try to find matching value (case-insensitive)
+                // Try full name first, then short name
+                let enumValue = universe.find(v => v.toLowerCase() === dayNameLong.toLowerCase());
+                if (!enumValue) {
+                    enumValue = universe.find(v => v.toLowerCase() === dayNameShort.toLowerCase());
+                }
+                if (enumValue) {
+                    clickDayName.setValue(enumValue);
+                }
+            } else {
+                // It's a string attribute - use full name
+                clickDayName.setValue(dayNameLong);
+            }
+        }
+
+        // Execute action with user object as context
+        if (onCellClick && userItem) {
+            const action = onCellClick.get(userItem);
+            if (action && action.canExecute) {
+                action.execute();
+            }
         }
     };
 
