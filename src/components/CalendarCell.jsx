@@ -15,7 +15,10 @@ export function CalendarCell({ cell, onClick }) {
     if (cell.hasActual) {
         const typeStr = String(cell.actualType || "").toLowerCase();
 
-        if (cell.isPartTime) {
+        // Check if it's an "Available" roster type
+        if (typeStr === "available") {
+            cellColorClass = "cell-available";
+        } else if (cell.isPartTime) {
             // Part-time sick or leave: show as available (green)
             cellColorClass = "cell-available";
         } else {
@@ -43,6 +46,27 @@ export function CalendarCell({ cell, onClick }) {
 function CellContent({ cell }) {
     if (cell.hasActual) {
         const typeStr = String(cell.actualType || "").toLowerCase();
+
+        // Handle "Available" roster type - display like pattern available
+        if (typeStr === "available") {
+            const workingHours = extractNumber(cell.workingHours);
+            const startTime = extractTime(cell.workStartTime);
+            const endTime = extractTime(cell.workEndTime);
+
+            return (
+                <div className="roster-calendar-cell-content">
+                    <div className="roster-calendar-cell-label">Available</div>
+                    {workingHours != null && !isNaN(workingHours) && (
+                        <div className="roster-calendar-cell-hours">{workingHours}h</div>
+                    )}
+                    {startTime && endTime && (
+                        <div className="roster-calendar-cell-time">
+                            {startTime} - {endTime}
+                        </div>
+                    )}
+                </div>
+            );
+        }
 
         if (cell.isPartTime) {
             // Part-time: show available with working hours and badge
